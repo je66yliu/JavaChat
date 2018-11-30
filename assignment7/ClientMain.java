@@ -21,13 +21,14 @@ import java.net.Socket;
 import java.util.Collection;
 
 public class ClientMain extends Application {
-    private int WINDOW_WIDTH;
-    private int WINDOW_HEIGHT;
+    final private int WINDOW_WIDTH = 800;
+    final private int WINDOW_HEIGHT = 600;
     private TextArea incoming;
     private TextField outgoing;
     private BufferedReader reader;
     private PrintWriter writer;
-
+    private String username;
+    private int userPot;
 
 
     public static void main(String[] args) {
@@ -51,6 +52,36 @@ public class ClientMain extends Application {
         connetToServer();
 
         primaryStage.setTitle("Pair-40 Chat Room");
+
+        /***** Set up login screen *****/
+        //Username
+        Label usernameLable = new Label("Username: ");
+        TextField usernameTextField = new TextField();
+        usernameTextField.setMaxHeight(10);
+        usernameTextField.setMaxWidth(60);
+        HBox usernameBox = new HBox(usernameLable, usernameTextField);
+
+        //Password
+        Label passwordLable = new Label("Password: ");
+        TextField passwordTextField = new TextField();
+        passwordTextField.setMaxHeight(10);
+        passwordTextField.setMaxWidth(60);
+        HBox passwordBox = new HBox(passwordLable, passwordTextField);
+
+        //Buttons
+        Button loginButton = new Button("Login: ");
+        Button registerButton = new Button("Register");
+        Button changeToChatRoom = new Button("switch scene test");
+        HBox loginButtonBox = new HBox(loginButton, registerButton, changeToChatRoom);
+
+        //Grid control
+        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox);
+        GridPane loginScreenGrid = new GridPane();
+        loginScreenGrid.getChildren().addAll(loginScreenVBox);
+        Scene loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        primaryStage.setScene(loginScreenScene);
+
 
         /***** Set up text output *****/
         Label label_ChatHistory = new Label("Chat History");
@@ -77,9 +108,9 @@ public class ClientMain extends Application {
         Button sendText = new Button("Send");
 
 
-        sendText.setOnAction(e->{
-            System.out.println(outgoing.getText());
-            writer.println(outgoing.getText());
+        sendText.setOnAction(e -> {
+            System.out.println("Client Sent: " + outgoing.getText());
+            writer.println("MSG_" + outgoing.getText());
             writer.flush();
             outgoing.setText("");
             outgoing.requestFocus();
@@ -93,12 +124,18 @@ public class ClientMain extends Application {
         VBox mainBox = new VBox();
         mainBox.getChildren().addAll(label_ChatHistory, incoming, label_EnterText, textInput);
 
-        GridPane mainGrid = new GridPane();
-        mainGrid.getChildren().addAll(mainBox);
+        GridPane chatRoomGrid = new GridPane();
+        chatRoomGrid.getChildren().addAll(mainBox);
 
-        Scene mainScene = new Scene(mainGrid, 500, 500);
+        Scene chatRoom = new Scene(chatRoomGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        primaryStage.setScene(mainScene);
+
+        /***** Scene Change Control *****/
+        changeToChatRoom.setOnAction(e -> {
+            primaryStage.setScene(chatRoom);
+        });
+
+
         primaryStage.show();
     }
 

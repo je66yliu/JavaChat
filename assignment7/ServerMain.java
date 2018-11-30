@@ -6,10 +6,15 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Observable;
+import java.util.*;
 
 public class ServerMain extends Observable {
 
-    int port =5000;
+    private static ArrayList<Socket> SocketConnected = new ArrayList<Socket>();
+    private static HashMap<Socket, String> Socket_Username = new HashMap<Socket, String>();
+    private static HashMap<String, String> Username_Password = new HashMap<String, String>();
+
+    private int port =5000;
 
     public static void main(String[] args) {
         System.out.println("start");
@@ -27,6 +32,8 @@ public class ServerMain extends Observable {
 
         while(true){
             Socket clientSock = serverSocket.accept();
+            SocketConnected.add(clientSock);
+
             ClientObserver writer = new ClientObserver(clientSock.getOutputStream());
             Thread t = new Thread(new ClientHandler(clientSock));
             t.start();
@@ -54,6 +61,8 @@ public class ServerMain extends Observable {
             try {
                 while ((message = reader.readLine()) != null) {
                     System.out.println("Sever read: " + message);
+
+                    /***** Process message type *****/
                     setChanged();
                     notifyObservers(message);
                 }
