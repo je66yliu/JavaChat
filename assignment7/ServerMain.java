@@ -57,14 +57,27 @@ public class ServerMain extends Observable {
 
         @Override
         public void run() {
-            String message;
+            String messageReceived;
+            String messageDelivered;
+            String messageType;
             try {
-                while ((message = reader.readLine()) != null) {
-                    System.out.println("Sever read: " + message);
+                while ((messageReceived = reader.readLine()) != null) {
+                    System.out.println("Sever read: " + messageReceived);
 
                     /***** Process message type *****/
-                    setChanged();
-                    notifyObservers(message);
+                    /* Message type
+                    Message: MSG_
+                    Username/Password: UPS_
+                    * */
+                    messageType = messageReceived.split("_")[0];
+
+                    switch (messageType){
+                        case "MSG":
+                            messageDelivered = messageReceived.substring(4);
+                            setChanged();
+                            notifyObservers(messageDelivered);
+                    }
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();
