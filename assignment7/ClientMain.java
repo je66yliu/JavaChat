@@ -29,6 +29,7 @@ public class ClientMain extends Application {
     private PrintWriter writer;
     private String username;
     private int userPot;
+    private int portAddress;
 
 
     public static void main(String[] args) {
@@ -38,6 +39,7 @@ public class ClientMain extends Application {
     private void connetToServer() throws IOException {
         @SuppressWarnings("resource")
         Socket clientSock = new Socket("127.0.0.1", 5000);
+        portAddress = clientSock.getLocalPort();
         InputStreamReader streamReader = new InputStreamReader(clientSock.getInputStream());
         reader = new BufferedReader(streamReader);
         writer = new PrintWriter(clientSock.getOutputStream());
@@ -70,12 +72,26 @@ public class ClientMain extends Application {
 
         //Buttons
         Button loginButton = new Button("Login: ");
+
+        //Register button
         Button registerButton = new Button("Register");
+        registerButton.setOnAction(e -> {
+            System.out.println("Client Username_password: " + usernameTextField.getText() + "_" + passwordTextField.getText());
+            writer.println(Integer.toString(portAddress) + "_" + "UPS_" + usernameTextField.getText() + "_" + passwordTextField.getText());
+            writer.flush();
+            usernameTextField.setText("");
+            passwordTextField.setText("");
+            usernameTextField.requestFocus();
+        });
+
         Button changeToChatRoom = new Button("switch scene test");
         HBox loginButtonBox = new HBox(loginButton, registerButton, changeToChatRoom);
 
+        //Notification label
+        Label registerNotification = new Label("");
+
         //Grid control
-        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox);
+        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox,registerNotification);
         GridPane loginScreenGrid = new GridPane();
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
         Scene loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -110,7 +126,7 @@ public class ClientMain extends Application {
 
         sendText.setOnAction(e -> {
             System.out.println("Client Sent: " + outgoing.getText());
-            writer.println("MSG_" + outgoing.getText());
+            writer.println(Integer.toString(portAddress) + "_" + "MSG_" + outgoing.getText());
             writer.flush();
             outgoing.setText("");
             outgoing.requestFocus();
@@ -148,6 +164,9 @@ public class ClientMain extends Application {
 
             try {
                 while ((message = reader.readLine()) != null) {
+                    /*****Process message*****/
+
+
                     incoming.appendText(message + "\n");
                 }
             } catch (IOException e) {

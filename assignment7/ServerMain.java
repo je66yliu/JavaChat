@@ -11,16 +11,16 @@ import java.util.*;
 public class ServerMain extends Observable {
 
     private static ArrayList<Socket> SocketConnected = new ArrayList<Socket>();
-    private static HashMap<Socket, String> Socket_Username = new HashMap<Socket, String>();
-    private static HashMap<String, String> Username_Password = new HashMap<String, String>();
+    private static HashMap<Integer, String> socketPort_Username = new HashMap<Integer, String>();
+    private static HashMap<String, String> username_Password = new HashMap<String, String>();
 
-    private int port =5000;
+    private int port = 5000;
 
     public static void main(String[] args) {
         System.out.println("start");
-        try{
+        try {
             new ServerMain().initNetwork();
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -30,7 +30,7 @@ public class ServerMain extends Observable {
         @SuppressWarnings("resource")
         ServerSocket serverSocket = new ServerSocket(port);
 
-        while(true){
+        while (true) {
             Socket clientSock = serverSocket.accept();
             SocketConnected.add(clientSock);
 
@@ -60,6 +60,9 @@ public class ServerMain extends Observable {
             String messageReceived;
             String messageDelivered;
             String messageType;
+            int lengthOfVerivication;
+            int socketPort;
+
             try {
                 while ((messageReceived = reader.readLine()) != null) {
                     System.out.println("Sever read: " + messageReceived);
@@ -69,13 +72,39 @@ public class ServerMain extends Observable {
                     Message: MSG_
                     Username/Password: UPS_
                     * */
-                    messageType = messageReceived.split("_")[0];
+                    String[] messageProcessing = messageReceived.split("_");
+                    socketPort = Integer.parseInt(messageProcessing[0]);
+                    messageType = messageProcessing[1];
 
-                    switch (messageType){
+
+                    switch (messageType) {
                         case "MSG":
-                            messageDelivered = messageReceived.substring(4);
+                            lengthOfVerivication = messageProcessing[0].length() + messageProcessing[1].length() + 2;
+                            messageDelivered = messageReceived.substring(lengthOfVerivication);
+
                             setChanged();
                             notifyObservers(messageDelivered);
+                            break;
+
+                        case "UPS":
+
+                            String username = messageProcessing[2];
+                            String password = messageProcessing[3];
+
+                            //Check existing user
+                            if (username_Password.containsKey(username)){
+                                System.out.println("User exists");
+                            } else{
+                                socketPort_Username.put(socketPort,username);
+                                username_Password.put(username,password);
+                            }
+
+                            System.out.println(socketPort_Username.toString());
+                            System.out.println(username_Password.toString());
+
+                            setChanged();
+                            notifyObservers("notification_");
+                            break;
                     }
 
                 }
@@ -83,6 +112,10 @@ public class ServerMain extends Observable {
                 e.printStackTrace();
             }
 
+        }
+
+        public String[] subArray(String[] arr, int start) {
+            return Arrays.copyOfRange(arr, start, arr.length);
         }
     }
 }
