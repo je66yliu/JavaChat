@@ -9,7 +9,7 @@ import java.util.Observable;
 
 public class ServerMain extends Observable {
 
-    int port =5000;
+    private int port =5000;
 
     public static void main(String[] args) {
         System.out.println("start");
@@ -39,9 +39,8 @@ public class ServerMain extends Observable {
         private BufferedReader reader;
 
         public ClientHandler(Socket clientSock) {
-            Socket sock = clientSock;
             try {
-                reader = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                reader = new BufferedReader(new InputStreamReader(clientSock.getInputStream()));
             } catch (IOException e) {
                 e.printStackTrace();
             }

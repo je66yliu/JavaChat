@@ -34,7 +34,7 @@ public class ClientMain extends Application {
         launch(args);
     }
 
-    private void connetToServer() throws IOException {
+    private void connectToServer() throws IOException {
         @SuppressWarnings("resource")
         Socket clientSock = new Socket("127.0.0.1", 5000);
         InputStreamReader streamReader = new InputStreamReader(clientSock.getInputStream());
@@ -48,7 +48,7 @@ public class ClientMain extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        connetToServer();
+        connectToServer();
 
         primaryStage.setTitle("Pair-40 Chat Room");
 
