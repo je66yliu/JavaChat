@@ -1,6 +1,9 @@
 package assignment7;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -28,9 +31,15 @@ public class ClientMain extends Application {
     private BufferedReader reader;
     private PrintWriter writer;
     private String username;
-    private int userPot;
     private int portAddress;
+    private StringProperty registerNotificationText;
+    private Label registerNotification;
+    private Scene chatRoom;
+    private static Stage mainStage;
 
+    TextField usernameTextField;
+    TextField passwordTextField;
+    Label label_username;
 
     public static void main(String[] args) {
         launch(args);
@@ -53,31 +62,38 @@ public class ClientMain extends Application {
     public void start(Stage primaryStage) throws Exception {
         connectToServer();
 
-        primaryStage.setTitle("Pair-40 Chat Room");
+        mainStage = primaryStage;
+
+        mainStage.setTitle("Pair-40 Chat Room");
 
         /***** Set up login screen *****/
         //Username
-        Label usernameLable = new Label("Username: ");
-        TextField usernameTextField = new TextField();
+        Label usernameLabel = new Label("Username: ");
+        usernameTextField = new TextField();
         usernameTextField.setMaxHeight(10);
         usernameTextField.setMaxWidth(60);
-        HBox usernameBox = new HBox(usernameLable, usernameTextField);
+        HBox usernameBox = new HBox(usernameLabel, usernameTextField);
 
         //Password
-        Label passwordLable = new Label("Password: ");
-        TextField passwordTextField = new TextField();
+        Label passwordLabel = new Label("Password: ");
+        passwordTextField = new TextField();
         passwordTextField.setMaxHeight(10);
         passwordTextField.setMaxWidth(60);
-        HBox passwordBox = new HBox(passwordLable, passwordTextField);
+        HBox passwordBox = new HBox(passwordLabel, passwordTextField);
 
         //Buttons
         Button loginButton = new Button("Login: ");
+        loginButton.setOnAction(e -> {
+            System.out.println("Logging in with: " + usernameTextField.getText() + "_" + passwordTextField.getText());
+            writer.println(Integer.toString(portAddress) + "_" + "LOG_" + usernameTextField.getText() + "_" + passwordTextField.getText());
+            writer.flush();
+        });
 
         //Register button
         Button registerButton = new Button("Register");
         registerButton.setOnAction(e -> {
-            System.out.println("Client Username_password: " + usernameTextField.getText() + "_" + passwordTextField.getText());
-            writer.println(Integer.toString(portAddress) + "_" + "UPS_" + usernameTextField.getText() + "_" + passwordTextField.getText());
+            System.out.println("Registering new account: " + usernameTextField.getText() + "_" + passwordTextField.getText());
+            writer.println(Integer.toString(portAddress) + "_" + "REG_" + usernameTextField.getText() + "_" + passwordTextField.getText());
             writer.flush();
             usernameTextField.setText("");
             passwordTextField.setText("");
@@ -88,18 +104,22 @@ public class ClientMain extends Application {
         HBox loginButtonBox = new HBox(loginButton, registerButton, changeToChatRoom);
 
         //Notification label
-        Label registerNotification = new Label("");
+        registerNotification = new Label("");
+//        registerNotificationText = new SimpleStringProperty();
+//        registerNotification.setText("Notification");
+//        registerNotification.textProperty().bind(registerNotificationText);
 
         //Grid control
-        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox,registerNotification);
+        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox, registerNotification);
         GridPane loginScreenGrid = new GridPane();
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
         Scene loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        primaryStage.setScene(loginScreenScene);
+        mainStage.setScene(loginScreenScene);
 
 
         /***** Set up text output *****/
+        label_username = new Label("");
         Label label_ChatHistory = new Label("Chat History");
         incoming = new TextArea();
         incoming.setMaxHeight(200);
@@ -138,21 +158,49 @@ public class ClientMain extends Application {
 
         /***** Main Control *****/
         VBox mainBox = new VBox();
-        mainBox.getChildren().addAll(label_ChatHistory, incoming, label_EnterText, textInput);
+        mainBox.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput);
 
         GridPane chatRoomGrid = new GridPane();
         chatRoomGrid.getChildren().addAll(mainBox);
 
-        Scene chatRoom = new Scene(chatRoomGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
+        chatRoom = new Scene(chatRoomGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
         /***** Scene Change Control *****/
         changeToChatRoom.setOnAction(e -> {
-            primaryStage.setScene(chatRoom);
+            mainStage.setScene(chatRoom);
         });
 
 
-        primaryStage.show();
+        mainStage.show();
+    }
+
+    public void setRegisterNotificationText(String input) {
+        registerNotification.setText(input);
+    }
+
+    public void setUsername(String input) {
+        this.username = input;
+    }
+
+    public static Stage getMainStage() {
+        return mainStage;
+    }
+
+    public Scene getChatRoomScene() {
+        return chatRoom;
+    }
+
+    public TextField getUsernameTextField() {
+        return usernameTextField;
+    }
+
+    public TextField getPasswordTextField() {
+        return passwordTextField;
+    }
+
+    public void setLabel_username(String input) {
+        label_username.setText(input);
     }
 
 
@@ -160,14 +208,104 @@ public class ClientMain extends Application {
 
         @Override
         public void run() {
-            String message;
+            String messageReceived;
+            String messageDelivered;
+            String messageType;
+            int lengthOfVerification;
 
             try {
-                while ((message = reader.readLine()) != null) {
+                while ((messageReceived = reader.readLine()) != null) {
+                    System.out.println("Client received: " + messageReceived);
                     /*****Process message*****/
+                    String[] messageProcessing = messageReceived.split("_");
+                    messageType = messageProcessing[0];
 
 
-                    incoming.appendText(message + "\n");
+
+                    switch (messageType) {
+                        /**
+                         * Message type
+                         * REG: registering new user
+                         * LOG: login to the system
+                         * MSG: messages
+                         */
+                        case "REG":
+                            if (messageProcessing[1].equals("dupUser")) {
+                                //If the username already exists
+                                Platform.runLater(() -> {
+                                    setRegisterNotificationText("User exists");
+                                });
+                            } else if (messageProcessing[1].equals("createdUser")) {
+                                //New user will be able to log into the system
+                                setUsername(messageProcessing[2]);
+                                Platform.runLater(() -> {
+                                    getMainStage().setScene(getChatRoomScene());
+                                    setLabel_username("Username: " + username);
+                                });
+                            }
+
+                            break;
+
+                        case "LOG":
+                            lengthOfVerification = messageProcessing[0].length()+messageProcessing[1].length();
+
+                            if (messageProcessing[1].equals("SUCCESSFUL")) {
+
+                                System.out.println("Login successful");
+
+                                //User logged in
+                                setUsername(messageProcessing[2]);
+                                Platform.runLater(() -> {
+                                    getMainStage().setScene(getChatRoomScene());
+                                    setLabel_username("Username: " + username);
+                                });
+                            } else if (messageProcessing[1].equals("USER-ONLINE")) {
+                                //Current user online
+                                Platform.runLater(() -> {
+                                    setRegisterNotificationText("You can't loggin from two devices at the same time.");
+                                    usernameTextField.setText("");
+                                    passwordTextField.setText("");
+                                    usernameTextField.requestFocus();
+                                });
+                            } else if (messageProcessing[1].equals("UNSUCCESSFUL")) {
+
+                                System.out.println("Login unsuccessful");
+
+                                //Wrong password
+
+                                Platform.runLater(() -> {
+                                    setRegisterNotificationText("Wrong password");
+                                    usernameTextField.setText("");
+                                    passwordTextField.setText("");
+                                    usernameTextField.requestFocus();
+                                });
+
+                            } else if (messageProcessing[1].equals("NOUSER")) {
+
+                                lengthOfVerification = messageProcessing[0].length()+messageProcessing[1].length();
+
+                                System.out.println("No such user");
+
+                                //No such user
+                                Platform.runLater(() -> {
+                                    setRegisterNotificationText("User " + messageProcessing[2] + " does not exist");
+                                    usernameTextField.setText("");
+                                    passwordTextField.setText("");
+                                    usernameTextField.requestFocus();
+                                });
+
+                            }
+
+
+                        case "MSG":
+                            lengthOfVerification = messageProcessing[0].length();
+
+                            messageDelivered = messageReceived.substring(lengthOfVerification + 1);
+                            incoming.appendText(messageDelivered + "\n");
+                            break;
+                    }
+
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();
