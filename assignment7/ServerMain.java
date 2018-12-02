@@ -25,6 +25,10 @@ public class ServerMain extends Observable {
 
     }
 
+    /**
+     * Initializes network, and continuously listens for new connections
+     * @throws Exception
+     */
     private void initNetwork() throws Exception {
         @SuppressWarnings("resource")
         ServerSocket serverSocket = new ServerSocket(port);
@@ -43,6 +47,9 @@ public class ServerMain extends Observable {
         }
     }
 
+    /**
+     * Handles the socket connection of a single client
+     */
     class ClientHandler implements Runnable {
         private ObjectInputStream reader;
         private ObjectOutputStream writer;
@@ -67,17 +74,26 @@ public class ServerMain extends Observable {
                     String password = messageReceived.getPassword();
 
                     switch (messageReceived.getMessageType()) {
+
+
+                        //Client wants to send message
                         case MSG:
                             setChanged();
                             notifyObservers(new Message(0, MessageType.MSG, messageReceived.getMessage(), null, null));
                             break;
 
+
+                        //Client wants to register as a new user
                         case REG:
+
+                            //The username that the client tries to register already exists
                             if (username_Password.containsKey(username)) {
                                 System.out.println("User exists");
                                 writer.writeObject(new Message(0, MessageType.REG, "dupUser", null, null));
                                 writer.flush();
                             }
+
+                            //Registration is successful
                             else {
                                 socketPort_Username.put(messageReceived.getSocketPort(), username);
                                 username_Password.put(username, password);
@@ -105,16 +121,25 @@ public class ServerMain extends Observable {
                             System.out.println(username_Password.toString());
                             break;
 
+
+                        //Client wants to login
                         case LOG:
                             boolean online = onlineUsers.contains(username);
 
+                            //The username exists in the database
                             if (username_Password.containsKey(username)) {
+
+                                //The username and password combination is correct
                                 if (username_Password.get(username).equals(password)) {
+
+                                    //The user that the client is logging in with is already online
                                     if (online) {
                                         System.out.println("Current user online");
                                         writer.writeObject(new Message(0, MessageType.LOG, "USER-ONLINE", null, null));
                                         writer.flush();
                                     }
+
+                                    //Username exists, password correct, current user is not already online = successful login
                                     else {
                                         System.out.println("Logged in as " + username);
 
@@ -136,12 +161,16 @@ public class ServerMain extends Observable {
                                         System.out.println("Online users :" + String.join(", ", onlineUsers));
                                     }
                                 }
+
+                                //The client entered a wrong password
                                 else {
                                     System.out.println("Password incorrect");
                                     writer.writeObject(new Message(0, MessageType.LOG, "UNSUCCESSFUL", null, null));
                                     writer.flush();
                                 }
                             }
+
+                            //The username the client tried to login with does not exist
                             else {
                                 System.out.println(username + " does not exist.");
                                 writer.writeObject(new Message(0, MessageType.LOG, "NOUSER", username, null));
@@ -152,6 +181,8 @@ public class ServerMain extends Observable {
                             System.out.println(username_Password.toString());
                             break;
 
+
+                        //Client wants to logout
                         case LOGOUT:
                             onlineUsers.remove(username);
                             deleteObserver(obs);
@@ -169,6 +200,9 @@ public class ServerMain extends Observable {
 
     }
 
+    /**
+     * Observes the server, and sends message to clients when appropriate
+     */
     class ClientObserver implements Observer {
 
         ObjectOutputStream outputStream;

@@ -44,6 +44,10 @@ public class ClientMain extends Application {
         launch(args);
     }
 
+    /**
+     * Establishes a connection to the server
+     * @throws IOException
+     */
     private void connectToServer() throws IOException {
         @SuppressWarnings("resource")
         Socket clientSock = new Socket("127.0.0.1", 5000);
@@ -109,8 +113,8 @@ public class ClientMain extends Application {
             }
         });
 
-        Button changeToChatRoom = new Button("switch scene test");
-        HBox loginButtonBox = new HBox(loginButton, registerButton, changeToChatRoom);
+//        Button changeToChatRoom = new Button("switch scene test");
+        HBox loginButtonBox = new HBox(loginButton, registerButton);
 
         //Notification label
         registerNotification = new Label("");
@@ -179,9 +183,9 @@ public class ClientMain extends Application {
         chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
-        //****************************************
-        //Scene Change Control
-        changeToChatRoom.setOnAction(e -> mainStage.setScene(chatRoom));
+//        //****************************************
+//        //Scene Change Control
+//        changeToChatRoom.setOnAction(e -> mainStage.setScene(chatRoom));
 
         //****************************************
         //Closing Controls
@@ -200,14 +204,25 @@ public class ClientMain extends Application {
         mainStage.show();
     }
 
+    /**
+     * Updates the list of all users that are online dynamically
+     */
     public void updateAllOnlineUsers() {
         onlineList.getChildren().retainAll(onlineList.getChildren().get(0));
         for (String s : onlineUsers) {
-            onlineList.getChildren().add(new Label(s));
+            if (s.equals(username)) {
+                onlineList.getChildren().add(new Button(s + " (me)"));
+            }
+            else {
+                onlineList.getChildren().add(new Button(s));
+            }
         }
     }
 
 
+    /**
+     * Thread that continuously listens for messages from the server
+     */
     class IncomingReader implements Runnable {
 
         @Override
@@ -217,10 +232,17 @@ public class ClientMain extends Application {
             try {
                 while ((message = (Message)reader.readObject()) != null) {
                     switch (message.getMessageType()) {
+
+
+                        //Registering
                         case REG:
+
+                            //User is already registered
                             if (message.getMessage().equals("dupUser")) {
                                 Platform.runLater(() -> registerNotification.setText("User exists"));
                             }
+
+                            //New user is successfully registered
                             else if (message.getMessage().equals("createdUser")) {
                                 username = message.getUsername();
                                 isLoggedIn = true;
@@ -231,7 +253,11 @@ public class ClientMain extends Application {
                             }
                             break;
 
+
+                        //Logging in
                         case LOG:
+
+                            //Successful login
                             if (message.getMessage().equals("SUCCESSFUL")) {
                                 System.out.println("Login successful");
                                 username = message.getUsername();
@@ -241,6 +267,8 @@ public class ClientMain extends Application {
                                     label_username.setText("Username: " + username);
                                 });
                             }
+
+                            //User is already online
                             else if (message.getMessage().equals("USER-ONLINE")) {
                                 Platform.runLater(() -> {
                                     registerNotification.setText("You can't login from two devices at the same time.");
@@ -249,6 +277,8 @@ public class ClientMain extends Application {
                                     usernameTextField.requestFocus();
                                 });
                             }
+
+                            //Wrong password
                             else if (message.getMessage().equals("UNSUCCESSFUL")) {
                                 System.out.println("Login unsuccessful");
                                 Platform.runLater(() -> {
@@ -258,6 +288,8 @@ public class ClientMain extends Application {
                                     usernameTextField.requestFocus();
                                 });
                             }
+
+                            //User is not found in the database
                             else if (message.getMessage().equals("NOUSER")) {
                                 System.out.println("No such user");
                                 Message finalMessage = message;
@@ -270,10 +302,14 @@ public class ClientMain extends Application {
                             }
                             break;
 
+
+                        //Received a message
                         case MSG:
                             incoming.appendText(message.getMessage() + '\n');
                             break;
 
+
+                        //Notifies this client when another client has logged in
                         case LOGIN:
                             if (isLoggedIn) {
                                 onlineUsers.add(message.getUsername());
@@ -282,6 +318,8 @@ public class ClientMain extends Application {
                             }
                             break;
 
+
+                        //Notifies this client when another client has logged out
                         case LOGOUT:
                             onlineUsers.remove(message.getUsername());
                             Platform.runLater(ClientMain.this::updateAllOnlineUsers);
