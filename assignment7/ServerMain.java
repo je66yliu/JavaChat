@@ -79,7 +79,7 @@ public class ServerMain extends Observable {
                         //Client wants to send message
                         case MSG:
                             setChanged();
-                            notifyObservers(new Message(0, MessageType.MSG, messageReceived.getMessage(), null, null));
+                            notifyObservers(new Message(0, MessageType.MSG, messageReceived.getMessage(), username, null));
                             break;
 
 

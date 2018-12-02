@@ -46,6 +46,7 @@ public class ClientMain extends Application {
 
     /**
      * Establishes a connection to the server
+     *
      * @throws IOException
      */
     private void connectToServer() throws IOException {
@@ -91,8 +92,7 @@ public class ClientMain extends Application {
                 System.out.println("Logging in with: " + usernameTextField.getText() + "_" + passwordTextField.getText());
                 writer.writeObject(new Message(portAddress, MessageType.LOG, null, usernameTextField.getText(), passwordTextField.getText()));
                 writer.flush();
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
@@ -107,8 +107,7 @@ public class ClientMain extends Application {
                 usernameTextField.setText("");
                 passwordTextField.setText("");
                 usernameTextField.requestFocus();
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
@@ -120,7 +119,7 @@ public class ClientMain extends Application {
         registerNotification = new Label("");
 
         //Grid control
-        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox,registerNotification);
+        VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox, registerNotification);
         GridPane loginScreenGrid = new GridPane();
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
         Scene loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -155,8 +154,7 @@ public class ClientMain extends Application {
                 usernameTextField.setText("");
                 passwordTextField.setText("");
                 usernameTextField.requestFocus();
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
@@ -194,8 +192,7 @@ public class ClientMain extends Application {
                 writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
                 reader.close();
                 writer.close();
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
@@ -212,8 +209,7 @@ public class ClientMain extends Application {
         for (String s : onlineUsers) {
             if (s.equals(username)) {
                 onlineList.getChildren().add(new Button(s + " (me)"));
-            }
-            else {
+            } else {
                 onlineList.getChildren().add(new Button(s));
             }
         }
@@ -230,7 +226,7 @@ public class ClientMain extends Application {
             Message message;
 
             try {
-                while ((message = (Message)reader.readObject()) != null) {
+                while ((message = (Message) reader.readObject()) != null) {
                     switch (message.getMessageType()) {
 
 
@@ -305,7 +301,7 @@ public class ClientMain extends Application {
 
                         //Received a message
                         case MSG:
-                            incoming.appendText(message.getMessage() + '\n');
+                            incoming.appendText(message.getUsername() + ": \n" + message.getMessage() + "\n\n");
                             break;
 
 
