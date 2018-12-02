@@ -1,12 +1,7 @@
 package assignment7;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -17,10 +12,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.beans.EventHandler;
 import java.io.*;
 import java.net.Socket;
-import java.util.Collection;
+import java.util.ArrayList;
 
 public class ClientMain extends Application {
     final private int WINDOW_WIDTH = 800;
@@ -38,6 +32,13 @@ public class ClientMain extends Application {
     TextField usernameTextField;
     TextField passwordTextField;
     Label label_username;
+
+    private HBox mainBox;
+    private VBox onlineList;
+
+    private boolean isLoggedIn = false;
+
+    private static ArrayList<String> onlineUsers = new ArrayList<>();
 
     public static void main(String[] args) {
         launch(args);
@@ -63,7 +64,8 @@ public class ClientMain extends Application {
 
         mainStage.setTitle("Pair-40 Chat Room");
 
-        /***** Set up login screen *****/
+        //****************************************
+        //Set up login screen
         //Username
         Label usernameLabel = new Label("Username: ");
         usernameTextField = new TextField();
@@ -122,7 +124,8 @@ public class ClientMain extends Application {
         mainStage.setScene(loginScreenScene);
 
 
-        /***** Set up text output *****/
+        //****************************************
+        //Set up text output
         label_username = new Label("");
         Label label_ChatHistory = new Label("Chat History");
         incoming = new TextArea();
@@ -131,7 +134,8 @@ public class ClientMain extends Application {
         incoming.setEditable(false);
 
 
-        /***** Set up text input *****/
+        //****************************************
+        //Set up text input
         Label label_EnterText = new Label("Enter Text Here");
         outgoing = new TextField();
         outgoing.setMaxWidth(400);
@@ -141,7 +145,7 @@ public class ClientMain extends Application {
         sendText.setOnAction(e -> {
             try {
                 System.out.println(outgoing.getText());
-                writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), null, null));
+                writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
                 writer.flush();
                 outgoing.setText("");
                 usernameTextField.setText("");
@@ -157,23 +161,33 @@ public class ClientMain extends Application {
         textInput.getChildren().addAll(outgoing, sendText);
 
 
-        /***** Main Control *****/
-        VBox mainBox = new VBox();
-        mainBox.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput);
-
-        GridPane chatRoomGrid = new GridPane();
-        chatRoomGrid.getChildren().addAll(mainBox);
-
-        chatRoom = new Scene(chatRoomGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
+        //****************************************
+        //Set up online users
+        Label online = new Label("Online");
+        onlineList = new VBox();
+        onlineList.getChildren().add(online);
 
 
-        /***** Scene Change Control *****/
+        //****************************************
+        //Main Control
+        VBox chats = new VBox();
+        chats.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput);
+
+        mainBox = new HBox();
+        mainBox.getChildren().addAll(chats, onlineList);
+
+        chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+
+        //****************************************
+        //Scene Change Control
         changeToChatRoom.setOnAction(e -> mainStage.setScene(chatRoom));
 
-        /***** Closing Controls *****/
+        //****************************************
+        //Closing Controls
         mainStage.setOnCloseRequest(e -> {
             try {
-                writer.writeObject(new Message(portAddress, MessageType.EXIT, "", username, null));
+                writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
                 reader.close();
                 writer.close();
             }
@@ -184,6 +198,13 @@ public class ClientMain extends Application {
 
 
         mainStage.show();
+    }
+
+    public void updateAllOnlineUsers() {
+        onlineList.getChildren().retainAll(onlineList.getChildren().get(0));
+        for (String s : onlineUsers) {
+            onlineList.getChildren().add(new Label(s));
+        }
     }
 
 
@@ -202,6 +223,7 @@ public class ClientMain extends Application {
                             }
                             else if (message.getMessage().equals("createdUser")) {
                                 username = message.getUsername();
+                                isLoggedIn = true;
                                 Platform.runLater(() -> {
                                     mainStage.setScene(chatRoom);
                                     label_username.setText("Username: " + username);
@@ -213,6 +235,7 @@ public class ClientMain extends Application {
                             if (message.getMessage().equals("SUCCESSFUL")) {
                                 System.out.println("Login successful");
                                 username = message.getUsername();
+                                isLoggedIn = true;
                                 Platform.runLater(() -> {
                                     mainStage.setScene(chatRoom);
                                     label_username.setText("Username: " + username);
@@ -249,6 +272,19 @@ public class ClientMain extends Application {
 
                         case MSG:
                             incoming.appendText(message.getMessage() + '\n');
+                            break;
+
+                        case LOGIN:
+                            if (isLoggedIn) {
+                                onlineUsers.add(message.getUsername());
+                                System.out.println("Online Users: " + String.join(", ", onlineUsers));
+                                Platform.runLater(ClientMain.this::updateAllOnlineUsers);
+                            }
+                            break;
+
+                        case LOGOUT:
+                            onlineUsers.remove(message.getUsername());
+                            Platform.runLater(ClientMain.this::updateAllOnlineUsers);
                             break;
                     }
                 }

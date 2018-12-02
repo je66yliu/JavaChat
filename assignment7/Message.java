@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.net.Socket;
 
 enum MessageType implements Serializable {
-    MSG, REG, LOG, EXIT
+    MSG, REG, LOG, LOGIN, LOGOUT
 }
 
 public class Message implements Serializable {

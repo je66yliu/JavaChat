@@ -36,7 +36,7 @@ public class ServerMain extends Observable {
             ObjectOutputStream output = new ObjectOutputStream(clientSock.getOutputStream());
             ObjectInputStream input = new ObjectInputStream(clientSock.getInputStream());
             ClientObserver obs = new ClientObserver(output);
-            Thread t = new Thread(new ClientHandler(output, input));
+            Thread t = new Thread(new ClientHandler(output, input, obs));
             t.start();
             this.addObserver(obs);
             System.out.println("Got a connection from " + clientSock);
@@ -46,10 +46,12 @@ public class ServerMain extends Observable {
     class ClientHandler implements Runnable {
         private ObjectInputStream reader;
         private ObjectOutputStream writer;
+        private ClientObserver obs;
 
-        public ClientHandler(ObjectOutputStream out, ObjectInputStream in) {
+        public ClientHandler(ObjectOutputStream out, ObjectInputStream in, ClientObserver obs) {
             this.reader = in;
             this.writer = out;
+            this.obs = obs;
         }
 
 
@@ -80,9 +82,23 @@ public class ServerMain extends Observable {
                                 socketPort_Username.put(messageReceived.getSocketPort(), username);
                                 username_Password.put(username, password);
                                 System.out.println("User " + username + " created");
-                                onlineUsers.add(username);
+
                                 writer.writeObject(new Message(0, MessageType.REG, "createdUser", username, null));
                                 writer.flush();
+
+                                //Whenever a user first logs in, notify it of all online users so it can display it
+                                if (!onlineUsers.contains(username)) {
+                                    for (String s : onlineUsers) {
+                                        writer.writeObject(new Message(0, MessageType.LOGIN, null, s, null));
+                                        writer.flush();
+                                    }
+                                }
+
+                                onlineUsers.add(username);
+
+                                setChanged();
+                                notifyObservers(new Message(0, MessageType.LOGIN, null, username, null));
+                                System.out.println("Online users :" + String.join(", ", onlineUsers));
                             }
 
                             System.out.println(socketPort_Username.toString());
@@ -101,9 +117,23 @@ public class ServerMain extends Observable {
                                     }
                                     else {
                                         System.out.println("Logged in as " + username);
-                                        onlineUsers.add(username);
+
                                         writer.writeObject(new Message(0, MessageType.LOG, "SUCCESSFUL", username, null));
                                         writer.flush();
+
+                                        //Whenever a user first logs in, notify it of all online users so it can display it
+                                        if (!onlineUsers.contains(username)) {
+                                            for (String s : onlineUsers) {
+                                                writer.writeObject(new Message(0, MessageType.LOGIN, null, s, null));
+                                                writer.flush();
+                                            }
+                                        }
+
+                                        onlineUsers.add(username);
+
+                                        setChanged();
+                                        notifyObservers(new Message(0, MessageType.LOGIN, null, username, null));
+                                        System.out.println("Online users :" + String.join(", ", onlineUsers));
                                     }
                                 }
                                 else {
@@ -122,8 +152,13 @@ public class ServerMain extends Observable {
                             System.out.println(username_Password.toString());
                             break;
 
-                        case EXIT:
+                        case LOGOUT:
                             onlineUsers.remove(username);
+                            deleteObserver(obs);
+                            setChanged();
+                            notifyObservers(new Message(0, MessageType.LOGOUT, null, username, null));
+                            reader.close();
+                            writer.close();
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
