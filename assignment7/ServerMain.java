@@ -1,29 +1,19 @@
 package assignment7;
 
-import sun.nio.cs.ext.ISCII91;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.SQLOutput;
 import java.util.Observable;
 import java.util.*;
 
 public class ServerMain extends Observable {
 
-    private static ArrayList<Socket> SocketConnected = new ArrayList<Socket>();
-    private static ArrayList<String> userConnected = new ArrayList<>();
-    private static HashMap<Integer, String> socketPort_Username = new HashMap<Integer, String>();
-    private static HashMap<String, String> username_Password = new HashMap<String, String>();
+//    private static ArrayList<Socket> socketConnected = new ArrayList<>();
+    private static ArrayList<String> onlineUsers = new ArrayList<>();
+    private static HashMap<Integer, String> socketPort_Username = new HashMap<>();
+    private static HashMap<String, String> username_Password = new HashMap<>();
 
     private int port = 5000;
-
-    public ArrayList<Socket> getSocketConnected() {
-        return SocketConnected;
-    }
 
     public static void main(String[] args) {
         System.out.println("start");
@@ -41,153 +31,127 @@ public class ServerMain extends Observable {
 
         while (true) {
             Socket clientSock = serverSocket.accept();
-            SocketConnected.add(clientSock);
+//            socketConnected.add(clientSock);
 
-            ClientObserver writer = new ClientObserver(clientSock.getOutputStream());
-            Thread t = new Thread(new ClientHandler(clientSock));
+            ObjectOutputStream output = new ObjectOutputStream(clientSock.getOutputStream());
+            ObjectInputStream input = new ObjectInputStream(clientSock.getInputStream());
+            ClientObserver obs = new ClientObserver(output);
+            Thread t = new Thread(new ClientHandler(output, input));
             t.start();
-            this.addObserver(writer);
+            this.addObserver(obs);
             System.out.println("Got a connection from " + clientSock);
         }
     }
 
     class ClientHandler implements Runnable {
-        private BufferedReader reader;
+        private ObjectInputStream reader;
+        private ObjectOutputStream writer;
 
-        public ClientHandler(Socket clientSock) {
-            try {
-                reader = new BufferedReader(new InputStreamReader(clientSock.getInputStream()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        public ClientHandler(ObjectOutputStream out, ObjectInputStream in) {
+            this.reader = in;
+            this.writer = out;
         }
 
 
         @Override
         public void run() {
-            String messageReceived;
-            String messageDelivered;
-            String messageType;
-            int lengthOfVerification;
-            int socketPort;
-            String username;
-            String password;
-            Socket clientSock = null;
+            Message messageReceived;
 
             try {
-                while ((messageReceived = reader.readLine()) != null) {
-                    System.out.println("Sever read: " + messageReceived);
+                while ((messageReceived = (Message)reader.readObject()) != null) {
+                    System.out.println("Server read: " + messageReceived.getMessage());
 
-                    /***** Process message type *****/
-                    /* Message type
-                    Message: MSG_
-                    Username/Password: UPS_
-                    * */
-                    String[] messageProcessing = messageReceived.split("_");
-                    socketPort = Integer.parseInt(messageProcessing[0]);
-                    messageType = messageProcessing[1];
+                    String username = messageReceived.getUsername();
+                    String password = messageReceived.getPassword();
 
-                    //Finding the specific user socket
-                    ArrayList<Socket> users = getSocketConnected();
-                    for (Socket c : users) {
-                        if (c.getPort() == socketPort) {
-                            clientSock = c;
-                        }
-                    }
-                    PrintWriter writer = new PrintWriter(clientSock.getOutputStream());
-
-
-                    switch (messageType) {
-                        case "MSG":
-                            lengthOfVerification = messageProcessing[0].length() + messageProcessing[1].length() + 2;
-                            messageDelivered = messageReceived.substring(lengthOfVerification);
-
+                    switch (messageReceived.getMessageType()) {
+                        case MSG:
                             setChanged();
-                            notifyObservers("MSG_" + messageDelivered);
+                            notifyObservers(new Message(0, MessageType.MSG, messageReceived.getMessage(), null, null));
                             break;
 
-                        case "REG":
-                            username = messageProcessing[2];
-                            password = messageProcessing[3];
-
-
-                            //Check existing user
+                        case REG:
                             if (username_Password.containsKey(username)) {
-                                //user exists
                                 System.out.println("User exists");
-
-                                writer.println("REG_" + "dupUser_");
+                                writer.writeObject(new Message(0, MessageType.REG, "dupUser", null, null));
                                 writer.flush();
-
-                            } else {
-                                //new user
-                                socketPort_Username.put(socketPort, username);
+                            }
+                            else {
+                                socketPort_Username.put(messageReceived.getSocketPort(), username);
                                 username_Password.put(username, password);
-
                                 System.out.println("User " + username + " created");
-
-                                userConnected.add(username);
-
-                                writer.println("REG_" + "createdUser_" + username);
+                                onlineUsers.add(username);
+                                writer.writeObject(new Message(0, MessageType.REG, "createdUser", username, null));
                                 writer.flush();
                             }
 
                             System.out.println(socketPort_Username.toString());
                             System.out.println(username_Password.toString());
-
                             break;
 
-                        case "LOG":
-                            username = messageProcessing[2];
-                            password = messageProcessing[3];
-
-                            boolean online = userConnected.contains(username);
+                        case LOG:
+                            boolean online = onlineUsers.contains(username);
 
                             if (username_Password.containsKey(username)) {
-                                //User exists
-                                //Check if password is correct
                                 if (username_Password.get(username).equals(password)) {
                                     if (online) {
                                         System.out.println("Current user online");
-                                        writer.println("LOG_USER-ONLINE_" + username);
-                                        writer.flush();
-                                    } else {
-                                        //Correct password
-                                        System.out.println("Logged in as " + username);
-                                        userConnected.add(username);
-                                        //Tell UI to change to chat room
-                                        writer.println("LOG_SUCCESSFUL_" + username);
+                                        writer.writeObject(new Message(0, MessageType.LOG, "USER-ONLINE", null, null));
                                         writer.flush();
                                     }
-                                } else {
-                                    //Incorrect password
+                                    else {
+                                        System.out.println("Logged in as " + username);
+                                        onlineUsers.add(username);
+                                        writer.writeObject(new Message(0, MessageType.LOG, "SUCCESSFUL", username, null));
+                                        writer.flush();
+                                    }
+                                }
+                                else {
                                     System.out.println("Password incorrect");
-                                    //Tell UT to change notification label
-                                    writer.println("LOG_UNSUCCESSFUL_" + username);
+                                    writer.writeObject(new Message(0, MessageType.LOG, "UNSUCCESSFUL", null, null));
                                     writer.flush();
                                 }
-                            } else {
-                                //Non Existing user
+                            }
+                            else {
                                 System.out.println(username + " does not exist.");
-                                writer.println("LOG_NOUSER_" + username);
+                                writer.writeObject(new Message(0, MessageType.LOG, "NOUSER", username, null));
                                 writer.flush();
                             }
 
                             System.out.println(socketPort_Username.toString());
                             System.out.println(username_Password.toString());
-
                             break;
-                    }
 
+                        case EXIT:
+                            onlineUsers.remove(username);
+                    }
                 }
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
 
         }
 
-        public String[] subArray(String[] arr, int start) {
-            return Arrays.copyOfRange(arr, start, arr.length);
+    }
+
+    class ClientObserver implements Observer {
+
+        ObjectOutputStream outputStream;
+
+        public ClientObserver(ObjectOutputStream out) {
+            this.outputStream = out;
+        }
+
+        @Override
+        public void update(Observable o, Object arg) {
+            try {
+                outputStream.writeObject(arg);
+                outputStream.flush();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
+
 }
