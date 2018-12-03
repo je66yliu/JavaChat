@@ -17,6 +17,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 
 public class ClientMain extends Application {
@@ -46,6 +47,8 @@ public class ClientMain extends Application {
     private boolean isLoggedIn = false;
 
     private static ArrayList<String> onlineUsers = new ArrayList<>();
+
+    private static HashMap<String, TextArea> privateChats = new HashMap<>();
 
     public static void main(String[] args) {
         launch(args);
@@ -276,7 +279,7 @@ public class ClientMain extends Application {
 
                 if (username_result.equals("Success")){
                     if (password_result.equals("Success")){
-                        System.out.println("Username and password are in valid format");
+                        System.out.println("Username and password are invalid format");
                         writer.writeObject(new Message(portAddress, MessageType.LOG, null, usernameTextField.getText(), passwordTextField.getText()));
                         writer.flush();
                     } else{
@@ -366,27 +369,24 @@ public class ClientMain extends Application {
         Button sendText = new Button("Send");
         Label chatRoomNotification = new Label("notification");
 
-        outgoing.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent keyEvent) {
-                if (keyEvent.getCode() == KeyCode.ENTER)  {
-                    try {
-                        if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
-                            chatRoomNotification.setText("You have to type something before you send it.");
-                        } else{
-                            System.out.println(outgoing.getText());
-                            writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
-                            writer.flush();
-                            outgoing.setText("");
-                            usernameTextField.setText("");
-                            passwordTextField.setText("");
-                            chatRoomNotification.setText("");
-                            usernameTextField.requestFocus();
-                        }
-
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
+        outgoing.setOnKeyPressed(keyEvent -> {
+            if (keyEvent.getCode() == KeyCode.ENTER)  {
+                try {
+                    if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
+                        chatRoomNotification.setText("You have to type something before you send it.");
+                    } else{
+                        System.out.println(outgoing.getText());
+                        writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
+                        writer.flush();
+                        outgoing.setText("");
+                        usernameTextField.setText("");
+                        passwordTextField.setText("");
+                        chatRoomNotification.setText("");
+                        usernameTextField.requestFocus();
                     }
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
                 }
             }
         });
@@ -459,16 +459,95 @@ public class ClientMain extends Application {
     public void updateAllOnlineUsers() {
         onlineList.getChildren().retainAll(onlineList.getChildren().get(0));
         for (String s : onlineUsers) {
+            Button b = new Button();
             if (s.equals(username)) {
-                onlineList.getChildren().add(new Button(s + " (me)"));
+                b.setText(s + " (me)");
+                onlineList.getChildren().add(b);
             } else {
-                onlineList.getChildren().add(new Button(s));
+                b.setText(s);
+                onlineList.getChildren().add(b);
             }
+            b.setOnAction(e -> openNewPrivateChat(s));
         }
     }
 
-    public void CreateGroupChat() {
+    public void openNewPrivateChat(String friend) {
+        if (friend.equals(username)) {
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setTitle("Error");
+            a.setHeaderText("Cannot chat with yourself");
+            a.setContentText("Please choose another user.");
+            a.showAndWait();
+        }
+        else if (!privateChats.containsKey(friend)) {
+            TextArea ta = new TextArea();
+            ta.setMaxHeight(200);
+            ta.setMaxWidth(400);
+            ta.setEditable(false);
 
+            privateChats.put(friend, ta);
+
+            Label enterText = new Label("Enter a message");
+
+            TextField msg = new TextField();
+            msg.setMaxHeight(20);
+            msg.setMaxWidth(400);
+
+            Button sendButton = new Button("Send");
+
+
+            msg.setOnKeyPressed(keyEvent -> {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    try {
+                        ta.appendText(username + ": \n" + msg.getText() + "\n\n");
+                        Message privateMessage = new Message(portAddress, MessageType.PRIVATE, msg.getText(), username, null);
+                        msg.setText("");
+                        privateMessage.setRecipient(friend);
+                        writer.writeObject(privateMessage);
+                        writer.flush();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
+            sendButton.setOnAction(e -> {
+                try {
+                    ta.appendText(username + ": \n" + msg.getText() + "\n\n");
+                    Message privateMessage = new Message(portAddress, MessageType.PRIVATE, msg.getText(), username, null);
+                    msg.setText("");
+                    privateMessage.setRecipient(friend);
+                    writer.writeObject(privateMessage);
+                    writer.flush();
+                }
+                catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            });
+
+            HBox msgPanel = new HBox();
+            msgPanel.getChildren().addAll(msg, sendButton);
+
+            VBox mainChatPanel = new VBox();
+            mainChatPanel.getChildren().addAll(ta, enterText, msgPanel);
+
+            Stage privateChatWindow = new Stage();
+            privateChatWindow.setTitle("Private chat between " + username + ", " + friend);
+            privateChatWindow.setScene(new Scene(mainChatPanel, 450, 450));
+            privateChatWindow.show();
+
+            privateChatWindow.setOnCloseRequest(e -> {
+                try {
+                    privateChats.remove(friend);
+                    Message privateMessage = new Message(portAddress, MessageType.PRIVATE, " has left the chat.", username, null);
+                    privateMessage.setRecipient(friend);
+                    writer.writeObject(privateMessage);
+                    writer.flush();
+                }
+                catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            });
+        }
     }
 
 
@@ -558,6 +637,24 @@ public class ClientMain extends Application {
                         //Received a message
                         case MSG:
                             incoming.appendText(message.getUsername() + ": \n" + message.getMessage() + "\n\n");
+                            break;
+
+
+                        case PRIVATE:
+                            if (message.getRecipient().equals(username)) {
+                                //message.getUsername() is the sender
+                                if (!privateChats.containsKey(message.getUsername()) && !message.getMessage().equals(" has left the chat.")) {
+                                    Message finalMessage1 = message;
+                                    Platform.runLater(() -> openNewPrivateChat(finalMessage1.getUsername()));
+                                }
+                                Message finalMessage2 = message;
+                                if (message.getMessage().equals(" has left the chat.")) {
+                                    Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + finalMessage2.getMessage() + "\n\n"));
+                                }
+                                else {
+                                    Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + ": \n" + finalMessage2.getMessage() + "\n\n"));
+                                }
+                            }
                             break;
 
 

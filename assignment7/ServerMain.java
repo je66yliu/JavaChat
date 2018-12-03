@@ -83,6 +83,16 @@ public class ServerMain extends Observable {
                             break;
 
 
+                        //Client wants to send private message
+                        case PRIVATE:
+                            //Username is the sender
+                            Message privateMessage = new Message(0, MessageType.PRIVATE, messageReceived.getMessage(), username, null);
+                            privateMessage.setRecipient(messageReceived.getRecipient());
+                            setChanged();
+                            notifyObservers(privateMessage);
+                            break;
+
+
                         //Client wants to register as a new user
                         case REG:
 
