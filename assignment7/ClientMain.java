@@ -28,7 +28,7 @@ public class ClientMain extends Application {
     final private int WINDOW_WIDTH = 800;
     final private int WINDOW_HEIGHT = 600;
     private TextArea incoming;
-    private TextField outgoing;
+    private TextArea outgoing;
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
     private String username;
@@ -250,13 +250,19 @@ public class ClientMain extends Application {
 
         VBox connectionConfigBox = new VBox();
         connectionConfigBox.setPrefHeight(200);
-        connectionConfigBox.setPrefWidth(320);
+        connectionConfigBox.setPrefWidth(340);
         connectionConfigBox.setPadding(new Insets(30));
-
         connectionConfigBox.setAlignment(Pos.CENTER);
         connectionConfigBox.setSpacing(10);
-        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification,connectingBar);
         connectionConfigBox.setBackground(new Background(new BackgroundFill(Color.WHITE,CornerRadii.EMPTY, Insets.EMPTY)));
+        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification,connectingBar);
+
+        String connectionConfigBoxLayout = "-fx-border-color: orange;\n" +
+                "-fx-border-insets: 5;\n" +
+                "-fx-border-width: 3;\n" +
+                "-fx-border-style: dashed;\n";
+
+        connectionConfigBox.setStyle(connectionConfigBoxLayout);
 
         GridPane serverConfigPane = new GridPane();
         serverConfigPane.setAlignment(Pos.CENTER);
@@ -265,9 +271,8 @@ public class ClientMain extends Application {
         serverConfigPane.getChildren().addAll(connectionConfigBox);
 
         Scene serverConfigScene = new Scene(serverConfigPane, WINDOW_WIDTH, WINDOW_HEIGHT);
-        serverConfigPane.getStylesheets().add("C:\\School\\2018 Fall\\EE422C\\Project\\Project7\\src\\assignment7\\resources\\connection_style.css");
 
-        mainStage.setScene(serverConfigScene);
+       // mainStage.setScene(serverConfigScene);
 
 
 
@@ -280,18 +285,20 @@ public class ClientMain extends Application {
         Label usernameLabel = new Label("Username: ");
         usernameTextField = new TextField();
         usernameTextField.setMaxHeight(10);
-        usernameTextField.setMaxWidth(100);
+        usernameTextField.setMaxWidth(200);
         HBox usernameBox = new HBox(usernameLabel, usernameTextField);
+        usernameBox.setSpacing(20);
 
         //Password
         Label passwordLabel = new Label("Password: ");
         passwordTextField = new PasswordField();
         passwordTextField.setMaxHeight(10);
-        passwordTextField.setMaxWidth(100);
+        passwordTextField.setMaxWidth(200);
         HBox passwordBox = new HBox(passwordLabel, passwordTextField);
+        passwordBox.setSpacing(25);
 
         //Buttons
-        Button loginButton = new Button("Login: ");
+        Button loginButton = new Button("Login");
         loginButton.setOnAction(e -> {
             try {
                 //Check illegal characters
@@ -366,14 +373,36 @@ public class ClientMain extends Application {
 
 //        Button changeToChatRoom = new Button("switch scene test");
         HBox loginButtonBox = new HBox(loginButton, registerButton);
+        loginButtonBox.setAlignment(Pos.CENTER);
+        loginButtonBox.setSpacing(40);
 
         //Notification label
         registerNotification = new Label("");
 
         //Grid control
+
         VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox, registerNotification);
+        loginScreenVBox.setPrefHeight(200);
+        loginScreenVBox.setPrefWidth(340);
+        loginScreenVBox.setPadding(new Insets(30));
+        loginScreenVBox.setAlignment(Pos.CENTER);
+        loginScreenVBox.setSpacing(10);
+
+        String loginScreeVBoxLayout = "-fx-border-color: orange;\n" +
+                                    "-fx-border-insets: 5;\n" +
+                                    "-fx-border-width: 3;\n" +
+                                    "-fx-border-style: dashed;\n";
+
+        loginScreenVBox.setStyle(loginScreeVBoxLayout);
+
+        loginScreenVBox.setBackground(new Background(new BackgroundFill(Color.WHITE,CornerRadii.EMPTY, Insets.EMPTY)));
+
         GridPane loginScreenGrid = new GridPane();
+        loginScreenGrid.setAlignment(Pos.CENTER);
+        loginScreenGrid.setBackground(new Background(new BackgroundFill(Color.rgb(223,125,60),
+                CornerRadii.EMPTY, Insets.EMPTY)));
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
+
         loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
@@ -395,7 +424,7 @@ public class ClientMain extends Application {
         //****************************************
         //Set up text input
         Label label_EnterText = new Label("Enter Text Here");
-        outgoing = new TextField();
+        outgoing = new TextArea();
         outgoing.setMaxWidth(400);
         outgoing.setMaxHeight(20);
         Button sendText = new Button("Send");
@@ -452,12 +481,14 @@ public class ClientMain extends Application {
         Label online = new Label("Online");
         onlineList = new VBox();
         onlineList.getChildren().add(online);
+        onlineList.setMaxWidth(100);
 
         //****************************************
         //Set up group chat ListView and createGroupChat button
         Label createGroupChat = new Label("Create a Group Chat");
         groupChatListView = new ListView<>();
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        groupChatListView.setPrefWidth(150);
         Button createGroupChatButton = new Button("Create");
 
 
@@ -470,11 +501,14 @@ public class ClientMain extends Application {
         makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
 
         mainBox = new HBox();
-        mainBox.getChildren().addAll(chats, onlineList, makeGroupChat);
+        mainBox.getChildren().addAll(makeGroupChat, onlineList,chats);
+        mainBox.setPadding(new Insets(30));
+        mainBox.setSpacing(20);
 
         chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
+        mainStage.setScene(serverConfigScene);
 //        //****************************************
 //        //Scene Change Control
 //        changeToChatRoom.setOnAction(e -> mainStage.setScene(chatRoom));
