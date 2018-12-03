@@ -3,7 +3,9 @@ package assignment7;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableListValue;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -50,6 +52,9 @@ public class ClientMain extends Application {
     private static ArrayList<String> onlineUsers = new ArrayList<>();
 
     private static HashMap<String, TextArea> privateChats = new HashMap<>();
+
+    private static boolean isInGroupChat = false;
+    private static ArrayList<String> groupChatMembers = new ArrayList<>();
 
     public static void main(String[] args) {
         launch(args);
@@ -429,6 +434,10 @@ public class ClientMain extends Application {
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         Button createGroupChatButton = new Button("Create");
 
+        createGroupChatButton.setOnAction(e -> {
+            ObservableList<String> members = groupChatListView.getSelectionModel().getSelectedItems();
+            openNewGroupChat(members);
+        });
 
         //****************************************
         //Main Control
@@ -565,6 +574,10 @@ public class ClientMain extends Application {
                 }
             });
         }
+    }
+
+    public void openNewGroupChat(ObservableList<String> members) {
+
     }
 
 

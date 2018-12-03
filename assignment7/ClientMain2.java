@@ -2,6 +2,8 @@ package assignment7;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -27,12 +29,16 @@ public class ClientMain2 extends Application {
     private ObjectOutputStream writer;
     private String username;
     private int portAddress;
+    private String ipAddress;
     private Label registerNotification;
     private Scene chatRoom;
+    private Scene loginScreenScene;
     private static Stage mainStage;
 
     TextField usernameTextField;
     PasswordField passwordTextField;
+    TextField ipAddressTextField;
+    TextField portTextField;
     Label label_username;
 
     private HBox mainBox;
@@ -49,6 +55,14 @@ public class ClientMain2 extends Application {
         launch(args);
     }
 
+    public void setIpAddress(String ipAddress){
+        this.ipAddress = ipAddress;
+    }
+
+    public void setPortAddress(int portAddress){
+        this.portAddress = portAddress;
+    }
+
     /**
      * Establishes a connection to the server
      *
@@ -56,7 +70,7 @@ public class ClientMain2 extends Application {
      */
     private void connectToServer() throws IOException {
         @SuppressWarnings("resource")
-        Socket clientSock = new Socket("127.0.0.1", 5000);
+        Socket clientSock = new Socket(ipAddress, portAddress);
         //Socket clientSock = new Socket("172.20.10.8", 5050);
         portAddress = clientSock.getLocalPort();
         writer = new ObjectOutputStream(clientSock.getOutputStream());
@@ -66,6 +80,17 @@ public class ClientMain2 extends Application {
         readerThread.start();
     }
 
+    private static final Pattern PATTERN = Pattern.compile(
+            "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+
+    /**
+     * Check if the ip address is valid
+     * @param ip
+     * @return a boolean
+     */
+    public static boolean validateIP(final String ip) {
+        return PATTERN.matcher(ip).matches();
+    }
 
 
     private final Pattern hasUppercase = Pattern.compile("[A-Z]");
@@ -151,26 +176,87 @@ public class ClientMain2 extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        connectToServer();
-
         mainStage = primaryStage;
-
         mainStage.setTitle("Pair-40 Chat Room");
 
-        //****************************************
+        /***********************
+         * SERVER CONFIG SCREEN*
+         * *********************/
+        //IP Address
+        Label ipAddressLabel = new Label("Server IP Address: ");
+        ipAddressTextField = new TextField();
+        ipAddressTextField.setMaxHeight(10);
+        ipAddressTextField.setMaxWidth(100);
+        ipAddressTextField.setText("127.0.0.1");
+        HBox ipConfigBox = new HBox(ipAddressLabel, ipAddressTextField);
+
+        //Port number
+        Label portLabel = new Label("Port: ");
+        portTextField = new TextField();
+        portTextField.setMaxHeight(10);
+        portTextField.setMaxWidth(100);
+        portTextField.setText("5000");
+        //Making sure the textfield only takes numbers
+        portTextField.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue,
+                                String newValue) {
+                if (!newValue.matches("\\d*")) {
+                    portTextField.setText(newValue.replaceAll("[^\\d]", ""));
+                }
+            }
+        });
+        HBox portConfigBox = new HBox(portLabel, portTextField);
+
+        //Connection notification
+        Label connectionNotification = new Label("");
+
+        //Connect button
+        Button connectServerButton = new Button("Connect to server");
+        connectServerButton.setOnAction(e->{
+            if (validateIP(ipAddressTextField.getText())){
+                setIpAddress(ipAddressTextField.getText());
+                setPortAddress(Integer.parseInt(portTextField.getText()));
+                try {
+                    connectToServer();
+                    connectionNotification.setText("");
+                    mainStage.setScene(loginScreenScene);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                    connectionNotification.setText("Connection failed");
+                }
+            } else{
+                connectionNotification.setText("Invalid IP Address");
+            }
+        });
+
+        VBox connectionConfigBox = new VBox();
+        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification);
+        GridPane serverConfigPane = new GridPane();
+        serverConfigPane.getChildren().addAll(connectionConfigBox);
+        Scene serverConfigScene = new Scene(serverConfigPane, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        mainStage.setScene(serverConfigScene);
+
+
+
+        /***************
+         * LOGIN SCREEN*
+         * *************/
         //Set up login screen
+
         //Username
         Label usernameLabel = new Label("Username: ");
         usernameTextField = new TextField();
         usernameTextField.setMaxHeight(10);
-        usernameTextField.setMaxWidth(60);
+        usernameTextField.setMaxWidth(100);
         HBox usernameBox = new HBox(usernameLabel, usernameTextField);
 
         //Password
         Label passwordLabel = new Label("Password: ");
         passwordTextField = new PasswordField();
         passwordTextField.setMaxHeight(10);
-        passwordTextField.setMaxWidth(60);
+        passwordTextField.setMaxWidth(100);
         HBox passwordBox = new HBox(passwordLabel, passwordTextField);
 
         //Buttons
@@ -257,11 +343,14 @@ public class ClientMain2 extends Application {
         VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox, registerNotification);
         GridPane loginScreenGrid = new GridPane();
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
-        Scene loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        mainStage.setScene(loginScreenScene);
+        loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
+
+
+        /*******************
+         * Chat room SCREEN*
+         * *****************/
         //****************************************
         //Set up text output
         label_username = new Label("");
