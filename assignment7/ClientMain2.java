@@ -908,7 +908,7 @@ public class ClientMain2 extends Application {
                         //Group chatting
                         case GROUP:
                             if (message.getGroupChatRecipients().contains(username)) {
-                                if (!isInGroupChat) {
+                                if (!isInGroupChat && !message.getMessage().equals(" has left the chat.")) {
                                     ArrayList<String> members = new ArrayList<>(message.getGroupChatRecipients());
                                     members.add(message.getUsername());
                                     members.remove(username);
