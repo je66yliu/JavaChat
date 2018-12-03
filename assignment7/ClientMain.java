@@ -9,6 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -16,7 +17,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.TextAlignment;
+import javafx.scene.text.*;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -25,6 +26,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static javafx.scene.paint.Color.WHITE;
@@ -219,18 +221,59 @@ public class ClientMain extends Application {
         return validation.toString();
     }
 
+    /**
+     * Create a HBox that contains the logo of of the app
+     *
+     * @return the new logo HBox object
+     */
+    public HBox getLogo(int size, int padding) {
+        Text group_text = new Text("Group");
+        group_text.setFill(Color.LIGHTBLUE);
+        group_text.setFont(Font.font("Helvetica", FontWeight.BOLD, FontPosture.ITALIC, size));
+        Text we_text = new Text("We");
+        we_text.setFill(Color.WHITE);
+        we_text.setFont(Font.font("Helvetica", FontWeight.BOLD, FontPosture.ITALIC, size));
+
+        HBox titleBox = new HBox(group_text, we_text);
+        titleBox.setAlignment(Pos.CENTER);
+        titleBox.setSpacing(0);
+        titleBox.setPadding(new Insets(padding));
+        return titleBox;
+    }
+
+    /**
+     * Create a combo box that contains the emojis
+     *
+     * @return emoji combo box
+     */
+    public ComboBox<String> getEmojiBox(TextArea input) {
+        ComboBox<String> emoji = new ComboBox<>();
+        emoji.getItems().addAll(emoji1_String, emoji2_String, emoji3_String, emoji4_String, emoji5_String,
+                emoji6_String, emoji7_String, emoji8_String);
+        emoji.setPromptText(emoji1_String);
+
+        emoji.setOnAction(e -> {
+            input.appendText(emoji.getValue());
+            emoji.setPromptText(emoji1_String);
+            input.requestFocus();
+        });
+        return emoji;
+    }
+
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         mainStage = primaryStage;
         mainStage.setTitle("Pair-40 Chat Room");
 
+        System.out.println(Font.getFamilies().toString());
         /***********************
          * SERVER CONFIG SCREEN*
          * *********************/
 
         //IP Address
         Label ipAddressLabel = new Label("Server IP Address: ");
+        ipAddressLabel.setFont(Font.font("Book Antiqua"));
 
         ipAddressTextField = new TextField();
         ipAddressTextField.setMaxHeight(10);
@@ -243,6 +286,8 @@ public class ClientMain extends Application {
 
         //Port number
         Label portLabel = new Label("Port: ");
+        portLabel.setFont(Font.font("Book Antiqua"));
+
         portLabel.setAlignment(Pos.CENTER_LEFT);
         portLabel.setTextAlignment(TextAlignment.LEFT);
         portTextField = new TextField();
@@ -261,10 +306,12 @@ public class ClientMain extends Application {
         });
         HBox portConfigBox = new HBox(portLabel, portTextField);
         portConfigBox.setPrefWidth(500);
-        portConfigBox.setSpacing(80);
+        portConfigBox.setSpacing(83);
 
         //Connection notification
         Label connectionNotification = new Label("");
+        connectionNotification.setFont(Font.font("Book Antiqua"));
+
 
         //Connect button
         Button connectServerButton = new Button("Connect to server");
@@ -287,6 +334,7 @@ public class ClientMain extends Application {
 
         //Progress bar
         ProgressBar connectingBar = new ProgressBar();
+        connectingBar.setPrefWidth(150);
         connectingBar.setProgress(-1);
 
 
@@ -310,7 +358,9 @@ public class ClientMain extends Application {
         serverConfigPane.setAlignment(Pos.CENTER);
         serverConfigPane.setBackground(new Background(new BackgroundFill(Color.rgb(223, 125, 60),
                 CornerRadii.EMPTY, Insets.EMPTY)));
-        serverConfigPane.getChildren().addAll(connectionConfigBox);
+
+        serverConfigPane.add(getLogo(50, 20), 0, 0);
+        serverConfigPane.add(connectionConfigBox, 0, 1);
 
         Scene serverConfigScene = new Scene(serverConfigPane, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -324,6 +374,9 @@ public class ClientMain extends Application {
 
         //Username
         Label usernameLabel = new Label("Username: ");
+        usernameLabel.setFont(Font.font("Book Antiqua"));
+
+
         usernameTextField = new TextField();
         usernameTextField.setMaxHeight(10);
         usernameTextField.setMaxWidth(200);
@@ -332,11 +385,14 @@ public class ClientMain extends Application {
 
         //Password
         Label passwordLabel = new Label("Password: ");
+        passwordLabel.setFont(Font.font("Book Antiqua"));
+
+
         passwordTextField = new PasswordField();
         passwordTextField.setMaxHeight(10);
         passwordTextField.setMaxWidth(200);
         HBox passwordBox = new HBox(passwordLabel, passwordTextField);
-        passwordBox.setSpacing(25);
+        passwordBox.setSpacing(23);
 
         //Buttons
         Button loginButton = new Button("Login");
@@ -419,6 +475,8 @@ public class ClientMain extends Application {
 
         //Notification label
         registerNotification = new Label("");
+        registerNotification.setFont(Font.font("Book Antiqua"));
+
 
         //Grid control
 
@@ -431,7 +489,7 @@ public class ClientMain extends Application {
 
         String loginScreeVBoxLayout = "-fx-border-color: orange;\n" +
                 "-fx-border-insets: 5;\n" +
-                "-fx-border-width: 3;\n" +
+                "-fx-border-width: 5;\n" +
                 "-fx-border-style: dashed;\n";
 
         loginScreenVBox.setStyle(loginScreeVBoxLayout);
@@ -442,7 +500,8 @@ public class ClientMain extends Application {
         loginScreenGrid.setAlignment(Pos.CENTER);
         loginScreenGrid.setBackground(new Background(new BackgroundFill(Color.rgb(223, 125, 60),
                 CornerRadii.EMPTY, Insets.EMPTY)));
-        loginScreenGrid.getChildren().addAll(loginScreenVBox);
+        loginScreenGrid.add(getLogo(50, 20), 0, 0);
+        loginScreenGrid.add(loginScreenVBox, 0, 1);
 
         loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -453,41 +512,41 @@ public class ClientMain extends Application {
         //****************************************
         //Set up text output
         label_username = new Label("");
+        label_username.setFont(Font.font("Book Antiqua", 14));
+
+
         Label label_ChatHistory = new Label("Chat History");
+        label_ChatHistory.setFont(Font.font("Book Antiqua"));
+
         incoming = new TextArea();
-        incoming.setPrefHeight(370);
-        incoming.setPrefWidth(500);
+        incoming.setPrefHeight(400);
+        incoming.setPrefWidth(350);
         incoming.setEditable(false);
         incoming.setWrapText(true);
+        incoming.setFont(Font.font("Helvetica", 12));
 
 
         //****************************************
         //Set up text input
         Label label_EnterText = new Label("Enter Text Here:");
-
-        ComboBox<String> emoji = new ComboBox<>();
-        emoji.getItems().addAll(emoji1_String, emoji2_String, emoji3_String, emoji4_String, emoji5_String,
-                emoji6_String, emoji7_String, emoji8_String);
-        emoji.setPromptText(emoji1_String);
-
-        emoji.setOnAction(e->{
-            outgoing.appendText(emoji.getValue());
-            emoji.setPromptText(emoji1_String);
-            outgoing.requestFocus();
-        });
-
-        HBox toolBox = new HBox();
-        toolBox.setSpacing(30);
-        toolBox.getChildren().addAll(label_EnterText, emoji);
+        label_EnterText.setFont(Font.font("Book Antiqua"));
 
         outgoing = new TextArea();
-        outgoing.setPrefWidth(400);
+        outgoing.setPrefWidth(350);
         outgoing.setPrefHeight(70);
         outgoing.setWrapText(true);
+        outgoing.setFont(Font.font("Helvetica", 14));
+
+        ComboBox<String> emoji_chatroom = getEmojiBox(outgoing);
+        HBox toolBox = new HBox();
+        toolBox.setSpacing(30);
+        toolBox.getChildren().addAll(label_EnterText, emoji_chatroom);
+
         Button sendText = new Button("Send");
         sendText.setPrefWidth(90);
         sendText.setPrefHeight(70);
         Label chatRoomNotification = new Label("");
+        chatRoomNotification.setFont(Font.font("Book Antiqua"));
 
         outgoing.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode().equals(KeyCode.ENTER)) {
@@ -537,18 +596,22 @@ public class ClientMain extends Application {
 
         //****************************************
         //Set up online users
-        Label online = new Label("Online");
+        Label online = new Label("Online Users:");
+        online.setFont(Font.font("Book Antiqua"));
+
         onlineList = new VBox();
         onlineList.getChildren().add(online);
         onlineList.setPrefWidth(100);
 
         //****************************************
         //Set up group chat ListView and createGroupChat button
-        Label createGroupChat = new Label("Create a Group Chat");
+        Label createGroupChat = new Label("Create a Group Chat:");
+        createGroupChat.setFont(Font.font("Book Antiqua"));
+
         groupChatListView = new ListView<>();
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         groupChatListView.setPrefWidth(100);
-        groupChatListView.setPrefHeight(500);
+        groupChatListView.setPrefHeight(480);
         Button createGroupChatButton = new Button("Create");
 
         createGroupChatButton.setOnAction(e -> {
@@ -559,19 +622,50 @@ public class ClientMain extends Application {
 
         //****************************************
         //Main Control
+        //Chat box
         VBox chats = new VBox();
         chats.setSpacing(10);
         chats.getChildren().addAll(label_username, label_ChatHistory, incoming, toolBox, textInput, chatRoomNotification);
 
+        //Groupchat box
         VBox makeGroupChat = new VBox();
+        makeGroupChat.setSpacing(10);
         makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
 
-        mainBox = new HBox();
-        mainBox.getChildren().addAll(makeGroupChat, onlineList, chats);
-        mainBox.setPadding(new Insets(30));
-        mainBox.setSpacing(15);
 
-        chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
+        //Chat function box
+        Separator separator1 = new Separator();
+        Separator separator2 = new Separator();
+        separator1.setOrientation(Orientation.VERTICAL);
+        separator2.setOrientation(Orientation.VERTICAL);
+        separator1.setBackground(new Background(new BackgroundFill(Color.GREY, CornerRadii.EMPTY, Insets.EMPTY)));
+        separator2.setBackground(new Background(new BackgroundFill(Color.GREY, CornerRadii.EMPTY, Insets.EMPTY)));
+
+        mainBox = new HBox();
+        mainBox.getChildren().addAll(makeGroupChat, separator1, onlineList, separator2, chats);
+        mainBox.setPadding(new Insets(0));
+        mainBox.setSpacing(10);
+        mainBox.setAlignment(Pos.CENTER);
+
+        //Overall chat room box
+        VBox chat_room_box = new VBox();
+        chat_room_box.setSpacing(10);
+        chat_room_box.getChildren().addAll(getLogo(50, 0), mainBox);
+        chat_room_box.setPadding(new Insets(30, 30, 30, 30));
+        chat_room_box.setBackground(new Background(new BackgroundFill(Color.rgb(251, 176, 108),
+                CornerRadii.EMPTY, Insets.EMPTY)));
+
+        String chatroombox = "-fx-border-color: darkorange;\n" +
+                "-fx-border-insets: 5;\n" +
+                "-fx-border-width: 5;\n" +
+                "-fx-border-style: dashed;\n";
+
+        chat_room_box.setStyle(chatroombox);
+
+        chatRoom = new Scene(chat_room_box, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+
+        /******/
 
 
         mainStage.setScene(serverConfigScene);
@@ -639,21 +733,32 @@ public class ClientMain extends Application {
             a.setContentText("Please choose another user.");
             a.showAndWait();
         } else if (!privateChats.containsKey(friend)) {
+            Label label_chathistory = new Label("Chat History:");
+            label_chathistory.setFont(Font.font("Book Antiqua"));
+
+
             TextArea ta = new TextArea();
-            ta.setMaxHeight(200);
-            ta.setMaxWidth(400);
+            ta.setPrefWidth(230);
+            ta.setPrefHeight(400);
             ta.setEditable(false);
 
             privateChats.put(friend, ta);
 
-            Label enterText = new Label("Enter a message");
+            Label enterText = new Label("Enter a message:");
+            enterText.setFont(Font.font("Book Antiqua"));
 
-            TextField msg = new TextField();
-            msg.setMaxHeight(20);
-            msg.setMaxWidth(400);
+            TextArea msg = new TextArea();
+            msg.setPrefHeight(70);
+            msg.setPrefWidth(300);
+
+            ComboBox<String> privateEmojiBox = getEmojiBox(msg);
+            HBox toolBox = new HBox();
+            toolBox.setSpacing(30);
+            toolBox.getChildren().addAll(enterText, privateEmojiBox);
 
             Button sendButton = new Button("Send");
-
+            sendButton.setPrefWidth(90);
+            sendButton.setPrefHeight(50);
 
             msg.setOnKeyPressed(keyEvent -> {
                 if (keyEvent.getCode() == KeyCode.ENTER) {
@@ -688,10 +793,24 @@ public class ClientMain extends Application {
             });
 
             HBox msgPanel = new HBox();
+            msgPanel.setSpacing(10);
             msgPanel.getChildren().addAll(msg, sendButton);
 
+
             VBox mainChatPanel = new VBox();
-            mainChatPanel.getChildren().addAll(ta, enterText, msgPanel);
+
+            mainChatPanel.setSpacing(10);
+            mainChatPanel.getChildren().addAll(getLogo(40, 0), label_chathistory, ta, toolBox, msgPanel);
+            mainChatPanel.setPadding(new Insets(30, 30, 30, 30));
+            mainChatPanel.setBackground(new Background(new BackgroundFill(Color.rgb(251, 176, 108),
+                    CornerRadii.EMPTY, Insets.EMPTY)));
+
+            String privateChatBox = "-fx-border-color: darkorange;\n" +
+                    "-fx-border-insets: 5;\n" +
+                    "-fx-border-width: 3;\n" +
+                    "-fx-border-style: dashed;\n";
+
+            mainChatPanel.setStyle(privateChatBox);
 
             Stage privateChatWindow = new Stage();
             privateChatWindow.setTitle("Private chat between " + username + ", " + friend);
@@ -710,20 +829,30 @@ public class ClientMain extends Application {
             isInGroupChat = true;
 
             groupChatTextArea = new TextArea();
-            groupChatTextArea.setMaxHeight(200);
-            groupChatTextArea.setMaxWidth(400);
+            groupChatTextArea.setPrefWidth(230);
+            groupChatTextArea.setPrefHeight(400);
             groupChatTextArea.setEditable(false);
 
             groupChatMembers.addAll(members);
 
-            Label enterText = new Label("Enter a message");
+            Label label_chathistory = new Label("Chat History:");
+            label_chathistory.setFont(Font.font("Book Antiqua"));
 
-            TextField msg = new TextField();
-            msg.setMaxHeight(20);
-            msg.setMaxWidth(400);
+            Label enterText = new Label("Enter a message");
+            enterText.setFont(Font.font("Book Antiqua"));
+
+            TextArea msg = new TextArea();
+            msg.setPrefHeight(70);
+            msg.setPrefWidth(300);
+
+            ComboBox<String> privateEmojiBox = getEmojiBox(msg);
+            HBox toolBox = new HBox();
+            toolBox.setSpacing(30);
+            toolBox.getChildren().addAll(enterText, privateEmojiBox);
 
             Button sendButton = new Button("Send");
-
+            sendButton.setPrefWidth(90);
+            sendButton.setPrefHeight(50);
 
             msg.setOnKeyPressed(keyEvent -> {
                 if (keyEvent.getCode() == KeyCode.ENTER) {
@@ -757,10 +886,23 @@ public class ClientMain extends Application {
             });
 
             HBox msgPanel = new HBox();
+            msgPanel.setSpacing(10);
             msgPanel.getChildren().addAll(msg, sendButton);
 
             VBox mainChatPanel = new VBox();
-            mainChatPanel.getChildren().addAll(groupChatTextArea, enterText, msgPanel);
+
+            mainChatPanel.setSpacing(10);
+            mainChatPanel.getChildren().addAll(getLogo(40, 0), label_chathistory, groupChatTextArea, toolBox, msgPanel);
+            mainChatPanel.setPadding(new Insets(30, 30, 30, 30));
+            mainChatPanel.setBackground(new Background(new BackgroundFill(Color.rgb(251, 176, 108),
+                    CornerRadii.EMPTY, Insets.EMPTY)));
+
+            String privateChatBox = "-fx-border-color: darkorange;\n" +
+                    "-fx-border-insets: 5;\n" +
+                    "-fx-border-width: 3;\n" +
+                    "-fx-border-style: dashed;\n";
+
+            mainChatPanel.setStyle(privateChatBox);
 
             groupChatStage = new Stage();
             groupChatStage.setTitle("Group chat between " + username + ", " + String.join(", ", members));
@@ -779,8 +921,7 @@ public class ClientMain extends Application {
             privateMessage.setRecipient(friend);
             writer.writeObject(privateMessage);
             writer.flush();
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
@@ -792,8 +933,7 @@ public class ClientMain extends Application {
             groupMessage.setGroupChatRecipients(members);
             writer.writeObject(groupMessage);
             writer.flush();
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
@@ -827,7 +967,7 @@ public class ClientMain extends Application {
                                 isLoggedIn = true;
                                 Platform.runLater(() -> {
                                     mainStage.setScene(chatRoom);
-                                    label_username.setText("Username: " + username);
+                                    label_username.setText("Current User:  " + username);
                                 });
                             }
                             break;
@@ -843,7 +983,7 @@ public class ClientMain extends Application {
                                 isLoggedIn = true;
                                 Platform.runLater(() -> {
                                     mainStage.setScene(chatRoom);
-                                    label_username.setText("Username: " + username);
+                                    label_username.setText("Current User:  " + username);
                                 });
                             }
 
@@ -917,8 +1057,7 @@ public class ClientMain extends Application {
                                 if (message.getMessage().equals(" has left the chat.")) {
                                     Message finalMessage3 = message;
                                     Platform.runLater(() -> groupChatTextArea.appendText(finalMessage3.getUsername() + finalMessage3.getMessage() + "\n\n"));
-                                }
-                                else {
+                                } else {
                                     Message finalMessage4 = message;
                                     Platform.runLater(() -> groupChatTextArea.appendText(finalMessage4.getUsername() + ": \n" + finalMessage4.getMessage() + "\n\n"));
                                 }
