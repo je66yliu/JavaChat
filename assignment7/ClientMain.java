@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public class ClientMain extends Application {
     final private int WINDOW_WIDTH = 800;
@@ -61,6 +62,88 @@ public class ClientMain extends Application {
     }
 
 
+
+    private final Pattern hasUppercase = Pattern.compile("[A-Z]");
+    private final Pattern hasLowercase = Pattern.compile("[a-z]");
+    private final Pattern hasNumber = Pattern.compile("\\d");
+    private final Pattern hasSpecialChar = Pattern.compile("[^a-zA-Z0-9]");
+
+    /**
+     * Check if the username is valid
+     * @param user
+     * @return a string of results
+     */
+    private String usernameValidation(String user){
+        StringBuilder validation = new StringBuilder();
+        if (user == null){
+                validation.append("Username can't be empty.");
+            return validation.toString();
+        }
+
+        if (user.isEmpty()){
+            validation.append("Username can't be empty.");
+            return validation.toString();
+        }
+
+        if (user.length()<4){
+            validation.append("Username has to be at least 4 characters.\n");
+        }
+
+        if(hasSpecialChar.matcher(user).find()){
+            validation.append("Username can not contain special characters.\n");
+        }
+
+        if (validation.length()==0){
+            validation.append("Success");
+        }
+        return validation.toString();
+    }
+
+    /**
+     * Check if the password is valid
+     * @param pass
+     * @return a string of results
+     */
+    private String passwordValidation(String pass){
+        StringBuilder validation = new StringBuilder();
+
+        if (pass == null){
+            validation.append("Password can't be empty.");
+            return validation.toString();
+        }
+
+        if (pass.isEmpty()){
+            validation.append("Password can't be empty.");
+            return validation.toString();
+        }
+
+        if (pass.length()<5){
+            validation.append("Password has to be at least 5 characters.\n");
+        }
+
+        if (!hasUppercase.matcher(pass).find()){
+            validation.append("Password needs an upper case letter.\n");
+        }
+
+        if (!hasLowercase.matcher(pass).find()){
+            validation.append("Password needs a lower case letter.\n");
+        }
+
+        if (!hasNumber.matcher(pass).find()){
+            validation.append("Password needs a number.\n");
+        }
+
+        if(!hasSpecialChar.matcher(pass).find()){
+            validation.append("Password needs a special character.\n");
+        }
+
+        if (validation.length()==0){
+            validation.append("Success");
+        }
+        return validation.toString();
+    }
+
+
     @Override
     public void start(Stage primaryStage) throws Exception {
         connectToServer();
@@ -89,9 +172,33 @@ public class ClientMain extends Application {
         Button loginButton = new Button("Login: ");
         loginButton.setOnAction(e -> {
             try {
-                System.out.println("Logging in with: " + usernameTextField.getText() + "_" + passwordTextField.getText());
-                writer.writeObject(new Message(portAddress, MessageType.LOG, null, usernameTextField.getText(), passwordTextField.getText()));
-                writer.flush();
+                //Check illegal characters
+                String username = usernameTextField.getText();
+                String password = passwordTextField.getText();
+                String username_result;
+                String password_result;
+
+                System.out.println("Logging in with: " + usernameTextField.getText().trim() + "_" + passwordTextField.getText());
+
+                //Username should only contain a-z, A-Z, 0-9, and be at least 4 characters long
+                //Password should contain upper case, lower case, numbers, and special character. Password
+                //should be at least 5 characters long
+
+                username_result = usernameValidation(username);
+                password_result = passwordValidation(password);
+
+                if (username_result.equals("Success")){
+                    if (password_result.equals("Success")){
+                        System.out.println("Username and password are in valid format");
+                        writer.writeObject(new Message(portAddress, MessageType.LOG, null, usernameTextField.getText(), passwordTextField.getText()));
+                        writer.flush();
+                    } else{
+                        registerNotification.setText(password_result);
+                    }
+                } else{
+                    registerNotification.setText(username_result);
+                }
+
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -100,16 +207,39 @@ public class ClientMain extends Application {
         //Register button
         Button registerButton = new Button("Register");
         registerButton.setOnAction(e -> {
-            try {
+                        try {
+                //Check illegal characters
+                String username = usernameTextField.getText();
+                String password = passwordTextField.getText();
+                String username_result;
+                String password_result;
+
                 System.out.println("Registering new account: " + usernameTextField.getText() + "_" + passwordTextField.getText());
-                writer.writeObject(new Message(portAddress, MessageType.REG, null, usernameTextField.getText(), passwordTextField.getText()));
-                writer.flush();
-                usernameTextField.setText("");
-                passwordTextField.setText("");
-                usernameTextField.requestFocus();
+
+                //Username should only contain a-z, A-Z, 0-9, and be at least 4 characters long
+                //Password should contain upper case, lower case, numbers, and special character. Password
+                //should be at least 5 characters long
+
+                username_result = usernameValidation(username);
+                password_result = passwordValidation(password);
+
+                if (username_result.equals("Success")){
+                    if (password_result.equals("Success")){
+                        System.out.println("Username and password are in valid format");
+                        writer.writeObject(new Message(portAddress, MessageType.REG, null, usernameTextField.getText(), passwordTextField.getText()));
+                        writer.flush();
+                    } else{
+                        registerNotification.setText(password_result);
+                    }
+                } else{
+                    registerNotification.setText(username_result);
+                }
+
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+
+
         });
 
 //        Button changeToChatRoom = new Button("switch scene test");
