@@ -540,7 +540,12 @@ public class ClientMain extends Application {
         groupChatListView = new ListView<>();
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         groupChatListView.setPrefWidth(100);
+        groupChatListView.setPrefHeight(500);
         Button createGroupChatButton = new Button("Create");
+
+        VBox makeGroupChat = new VBox();
+        makeGroupChat.setSpacing(10);
+        makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
 
 
         //****************************************
@@ -549,13 +554,12 @@ public class ClientMain extends Application {
         chats.setSpacing(10);
         chats.getChildren().addAll(label_username, label_ChatHistory, incoming, toolBox, textInput, chatRoomNotification);
 
-        VBox makeGroupChat = new VBox();
-        makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
+
 
         mainBox = new HBox();
         mainBox.getChildren().addAll(makeGroupChat, onlineList, chats);
         mainBox.setPadding(new Insets(30));
-        mainBox.setSpacing(20);
+        mainBox.setSpacing(15);
 
         chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -572,6 +576,7 @@ public class ClientMain extends Application {
         mainStage.setOnCloseRequest(e -> {
             try {
                 writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
+                writer.flush();
                 reader.close();
                 writer.close();
             } catch (IOException ex) {
