@@ -3,10 +3,7 @@ package assignment7;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -31,7 +28,7 @@ public class ClientMain extends Application {
     private static Stage mainStage;
 
     TextField usernameTextField;
-    TextField passwordTextField;
+    PasswordField passwordTextField;
     Label label_username;
 
     private HBox mainBox;
@@ -52,7 +49,7 @@ public class ClientMain extends Application {
      */
     private void connectToServer() throws IOException {
         @SuppressWarnings("resource")
-        Socket clientSock = new Socket("127.0.0.1", 5000);
+        Socket clientSock = new Socket("localhost", 5000);
         portAddress = clientSock.getLocalPort();
         writer = new ObjectOutputStream(clientSock.getOutputStream());
         reader = new ObjectInputStream(clientSock.getInputStream());
@@ -163,7 +160,7 @@ public class ClientMain extends Application {
 
         //Password
         Label passwordLabel = new Label("Password: ");
-        passwordTextField = new TextField();
+        passwordTextField = new PasswordField();
         passwordTextField.setMaxHeight(10);
         passwordTextField.setMaxWidth(60);
         HBox passwordBox = new HBox(passwordLabel, passwordTextField);
@@ -207,7 +204,7 @@ public class ClientMain extends Application {
         //Register button
         Button registerButton = new Button("Register");
         registerButton.setOnAction(e -> {
-                        try {
+            try {
                 //Check illegal characters
                 String username = usernameTextField.getText();
                 String password = passwordTextField.getText();
@@ -343,6 +340,10 @@ public class ClientMain extends Application {
                 onlineList.getChildren().add(new Button(s));
             }
         }
+    }
+
+    public void CreateGroupChat() {
+
     }
 
 
