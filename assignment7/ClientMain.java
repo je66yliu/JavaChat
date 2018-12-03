@@ -2,8 +2,11 @@ package assignment7;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -49,7 +52,8 @@ public class ClientMain extends Application {
      */
     private void connectToServer() throws IOException {
         @SuppressWarnings("resource")
-        Socket clientSock = new Socket("localhost", 5000);
+        Socket clientSock = new Socket("127.0.0.1", 5000);
+        //Socket clientSock = new Socket("172.20.10.8", 5050);
         portAddress = clientSock.getLocalPort();
         writer = new ObjectOutputStream(clientSock.getOutputStream());
         reader = new ObjectInputStream(clientSock.getInputStream());
@@ -272,6 +276,24 @@ public class ClientMain extends Application {
         outgoing.setMaxHeight(20);
         Button sendText = new Button("Send");
 
+        outgoing.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                if (keyEvent.getCode() == KeyCode.ENTER)  {
+                    try {
+                        System.out.println(outgoing.getText());
+                        writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
+                        writer.flush();
+                        outgoing.setText("");
+                        usernameTextField.setText("");
+                        passwordTextField.setText("");
+                        usernameTextField.requestFocus();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
         sendText.setOnAction(e -> {
             try {
                 System.out.println(outgoing.getText());
