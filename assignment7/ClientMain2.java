@@ -3,28 +3,36 @@ package assignment7;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableListValue;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.regex.Pattern;
+
+import static javafx.scene.paint.Color.WHITE;
 
 public class ClientMain2 extends Application {
     final private int WINDOW_WIDTH = 800;
     final private int WINDOW_HEIGHT = 600;
     private TextArea incoming;
-    private TextField outgoing;
+    private TextArea outgoing;
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
     private String username;
@@ -50,6 +58,12 @@ public class ClientMain2 extends Application {
     private static ArrayList<String> onlineUsers = new ArrayList<>();
 
     private static HashMap<String, TextArea> privateChats = new HashMap<>();
+    private static HashMap<String, Stage> privateChatWindows = new HashMap<>();
+
+    private static boolean isInGroupChat = false;
+    private static ArrayList<String> groupChatMembers = new ArrayList<>();
+    private Stage groupChatStage;
+    private TextArea groupChatTextArea;
 
     public static void main(String[] args) {
         launch(args);
@@ -182,19 +196,26 @@ public class ClientMain2 extends Application {
         /***********************
          * SERVER CONFIG SCREEN*
          * *********************/
+
         //IP Address
         Label ipAddressLabel = new Label("Server IP Address: ");
+
         ipAddressTextField = new TextField();
         ipAddressTextField.setMaxHeight(10);
-        ipAddressTextField.setMaxWidth(100);
+        ipAddressTextField.setMaxWidth(150);
         ipAddressTextField.setText("127.0.0.1");
+
         HBox ipConfigBox = new HBox(ipAddressLabel, ipAddressTextField);
+        ipConfigBox.setPrefWidth(500);
+        ipConfigBox.setSpacing(10);
 
         //Port number
         Label portLabel = new Label("Port: ");
+        portLabel.setAlignment(Pos.CENTER_LEFT);
+        portLabel.setTextAlignment(TextAlignment.LEFT);
         portTextField = new TextField();
         portTextField.setMaxHeight(10);
-        portTextField.setMaxWidth(100);
+        portTextField.setMaxWidth(150);
         portTextField.setText("5000");
         //Making sure the textfield only takes numbers
         portTextField.textProperty().addListener(new ChangeListener<String>() {
@@ -207,6 +228,8 @@ public class ClientMain2 extends Application {
             }
         });
         HBox portConfigBox = new HBox(portLabel, portTextField);
+        portConfigBox.setPrefWidth(500);
+        portConfigBox.setSpacing(80);
 
         //Connection notification
         Label connectionNotification = new Label("");
@@ -230,13 +253,36 @@ public class ClientMain2 extends Application {
             }
         });
 
+        //Progress bar
+        ProgressBar connectingBar =  new ProgressBar();
+        connectingBar.setProgress(-1);
+
+
         VBox connectionConfigBox = new VBox();
-        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification);
+        connectionConfigBox.setPrefHeight(200);
+        connectionConfigBox.setPrefWidth(400);
+        connectionConfigBox.setPadding(new Insets(30));
+        connectionConfigBox.setAlignment(Pos.CENTER);
+        connectionConfigBox.setSpacing(10);
+        connectionConfigBox.setBackground(new Background(new BackgroundFill(Color.WHITE,CornerRadii.EMPTY, Insets.EMPTY)));
+        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification,connectingBar);
+
+        String connectionConfigBoxLayout = "-fx-border-color: orange;\n" +
+                "-fx-border-insets: 5;\n" +
+                "-fx-border-width: 3;\n" +
+                "-fx-border-style: dashed;\n";
+
+        connectionConfigBox.setStyle(connectionConfigBoxLayout);
+
         GridPane serverConfigPane = new GridPane();
+        serverConfigPane.setAlignment(Pos.CENTER);
+        serverConfigPane.setBackground(new Background(new BackgroundFill(Color.rgb(223,125,60),
+                CornerRadii.EMPTY, Insets.EMPTY)));
         serverConfigPane.getChildren().addAll(connectionConfigBox);
+
         Scene serverConfigScene = new Scene(serverConfigPane, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        mainStage.setScene(serverConfigScene);
+        // mainStage.setScene(serverConfigScene);
 
 
 
@@ -249,18 +295,20 @@ public class ClientMain2 extends Application {
         Label usernameLabel = new Label("Username: ");
         usernameTextField = new TextField();
         usernameTextField.setMaxHeight(10);
-        usernameTextField.setMaxWidth(100);
+        usernameTextField.setMaxWidth(200);
         HBox usernameBox = new HBox(usernameLabel, usernameTextField);
+        usernameBox.setSpacing(20);
 
         //Password
         Label passwordLabel = new Label("Password: ");
         passwordTextField = new PasswordField();
         passwordTextField.setMaxHeight(10);
-        passwordTextField.setMaxWidth(100);
+        passwordTextField.setMaxWidth(200);
         HBox passwordBox = new HBox(passwordLabel, passwordTextField);
+        passwordBox.setSpacing(25);
 
         //Buttons
-        Button loginButton = new Button("Login: ");
+        Button loginButton = new Button("Login");
         loginButton.setOnAction(e -> {
             try {
                 //Check illegal characters
@@ -335,14 +383,36 @@ public class ClientMain2 extends Application {
 
 //        Button changeToChatRoom = new Button("switch scene test");
         HBox loginButtonBox = new HBox(loginButton, registerButton);
+        loginButtonBox.setAlignment(Pos.CENTER);
+        loginButtonBox.setSpacing(40);
 
         //Notification label
         registerNotification = new Label("");
 
         //Grid control
+
         VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox, registerNotification);
+        loginScreenVBox.setPrefHeight(200);
+        loginScreenVBox.setPrefWidth(400);
+        loginScreenVBox.setPadding(new Insets(30));
+        loginScreenVBox.setAlignment(Pos.CENTER);
+        loginScreenVBox.setSpacing(10);
+
+        String loginScreenVBoxLayout = "-fx-border-color: orange;\n" +
+                "-fx-border-insets: 5;\n" +
+                "-fx-border-width: 3;\n" +
+                "-fx-border-style: dashed;\n";
+
+        loginScreenVBox.setStyle(loginScreenVBoxLayout);
+
+        loginScreenVBox.setBackground(new Background(new BackgroundFill(Color.WHITE,CornerRadii.EMPTY, Insets.EMPTY)));
+
         GridPane loginScreenGrid = new GridPane();
+        loginScreenGrid.setAlignment(Pos.CENTER);
+        loginScreenGrid.setBackground(new Background(new BackgroundFill(Color.rgb(223,125,60),
+                CornerRadii.EMPTY, Insets.EMPTY)));
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
+
         loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
@@ -364,7 +434,7 @@ public class ClientMain2 extends Application {
         //****************************************
         //Set up text input
         Label label_EnterText = new Label("Enter Text Here");
-        outgoing = new TextField();
+        outgoing = new TextArea();
         outgoing.setMaxWidth(400);
         outgoing.setMaxHeight(20);
         Button sendText = new Button("Send");
@@ -421,14 +491,21 @@ public class ClientMain2 extends Application {
         Label online = new Label("Online");
         onlineList = new VBox();
         onlineList.getChildren().add(online);
+        onlineList.setMaxWidth(100);
 
         //****************************************
         //Set up group chat ListView and createGroupChat button
         Label createGroupChat = new Label("Create a Group Chat");
         groupChatListView = new ListView<>();
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        groupChatListView.setPrefWidth(150);
         Button createGroupChatButton = new Button("Create");
 
+        createGroupChatButton.setOnAction(e -> {
+            ObservableList<String> members = groupChatListView.getSelectionModel().getSelectedItems();
+            ArrayList<String> getMembers = new ArrayList<>(members);
+            openNewGroupChat(getMembers);
+        });
 
         //****************************************
         //Main Control
@@ -439,11 +516,14 @@ public class ClientMain2 extends Application {
         makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
 
         mainBox = new HBox();
-        mainBox.getChildren().addAll(chats, onlineList, makeGroupChat);
+        mainBox.getChildren().addAll(makeGroupChat, onlineList,chats);
+        mainBox.setPadding(new Insets(30));
+        mainBox.setSpacing(20);
 
         chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
+        mainStage.setScene(serverConfigScene);
 //        //****************************************
 //        //Scene Change Control
 //        changeToChatRoom.setOnAction(e -> mainStage.setScene(chatRoom));
@@ -452,7 +532,21 @@ public class ClientMain2 extends Application {
         //Closing Controls
         mainStage.setOnCloseRequest(e -> {
             try {
+                //Leave all the private chats first, and close all private chat windows
+                Set<String> currentlyChatting = privateChats.keySet();
+                for (String friend : currentlyChatting) {
+                    leaveChat(friend);
+                    privateChatWindows.get(friend).close();
+                    privateChatWindows.remove(friend);
+                }
+
+                if (isInGroupChat) {
+                    leaveGroupChat(groupChatMembers);
+                    groupChatStage.close();
+                }
+
                 writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
+                writer.flush();
                 reader.close();
                 writer.close();
             } catch (IOException ex) {
@@ -550,20 +644,105 @@ public class ClientMain2 extends Application {
             Stage privateChatWindow = new Stage();
             privateChatWindow.setTitle("Private chat between " + username + ", " + friend);
             privateChatWindow.setScene(new Scene(mainChatPanel, 450, 450));
+
+            privateChatWindows.put(friend, privateChatWindow);
+
             privateChatWindow.show();
 
-            privateChatWindow.setOnCloseRequest(e -> {
-                try {
-                    privateChats.remove(friend);
-                    Message privateMessage = new Message(portAddress, MessageType.PRIVATE, " has left the chat.", username, null);
-                    privateMessage.setRecipient(friend);
-                    writer.writeObject(privateMessage);
-                    writer.flush();
+            privateChatWindow.setOnCloseRequest(e -> leaveChat(friend));
+        }
+    }
+
+    public void openNewGroupChat(ArrayList<String> members) {
+        if (!isInGroupChat) {
+            isInGroupChat = true;
+
+            groupChatTextArea = new TextArea();
+            groupChatTextArea.setMaxHeight(200);
+            groupChatTextArea.setMaxWidth(400);
+            groupChatTextArea.setEditable(false);
+
+            groupChatMembers.addAll(members);
+
+            Label enterText = new Label("Enter a message");
+
+            TextField msg = new TextField();
+            msg.setMaxHeight(20);
+            msg.setMaxWidth(400);
+
+            Button sendButton = new Button("Send");
+
+
+            msg.setOnKeyPressed(keyEvent -> {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    try {
+                        if (!msg.getText().equals("") && msg.getText() != null) {
+                            groupChatTextArea.appendText(username + ": \n" + msg.getText() + "\n\n");
+                            Message groupChatMessage = new Message(portAddress, MessageType.GROUP, msg.getText(), username, null);
+                            msg.setText("");
+                            groupChatMessage.setGroupChatRecipients(members);
+                            writer.writeObject(groupChatMessage);
+                            writer.flush();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
-                catch (IOException ex) {
+            });
+            sendButton.setOnAction(e -> {
+                try {
+                    if (!msg.getText().equals("") && msg.getText() != null) {
+                        groupChatTextArea.appendText(username + ": \n" + msg.getText() + "\n\n");
+                        Message groupChatMessage = new Message(portAddress, MessageType.GROUP, msg.getText(), username, null);
+                        msg.setText("");
+                        groupChatMessage.setGroupChatRecipients(members);
+                        writer.writeObject(groupChatMessage);
+                        writer.flush();
+                    }
+                } catch (IOException ex) {
                     ex.printStackTrace();
                 }
             });
+
+            HBox msgPanel = new HBox();
+            msgPanel.getChildren().addAll(msg, sendButton);
+
+            VBox mainChatPanel = new VBox();
+            mainChatPanel.getChildren().addAll(groupChatTextArea, enterText, msgPanel);
+
+            groupChatStage = new Stage();
+            groupChatStage.setTitle("Group chat between " + username + ", " + String.join(", ", members));
+            groupChatStage.setScene(new Scene(mainChatPanel, 450, 450));
+
+            groupChatStage.show();
+
+            groupChatStage.setOnCloseRequest(e -> leaveGroupChat(members));
+        }
+    }
+
+    public void leaveChat(String friend) {
+        try {
+            privateChats.remove(friend);
+            Message privateMessage = new Message(portAddress, MessageType.PRIVATE, " has left the chat.", username, null);
+            privateMessage.setRecipient(friend);
+            writer.writeObject(privateMessage);
+            writer.flush();
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void leaveGroupChat(ArrayList<String> members) {
+        try {
+            isInGroupChat = false;
+            Message groupMessage = new Message(portAddress, MessageType.GROUP, " has left the chat.", username, null);
+            groupMessage.setGroupChatRecipients(members);
+            writer.writeObject(groupMessage);
+            writer.flush();
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -670,6 +849,27 @@ public class ClientMain2 extends Application {
                                 }
                                 else {
                                     Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + ": \n" + finalMessage2.getMessage() + "\n\n"));
+                                }
+                            }
+                            break;
+
+
+                        //Group chatting
+                        case GROUP:
+                            if (message.getGroupChatRecipients().contains(username)) {
+                                if (!isInGroupChat) {
+                                    ArrayList<String> members = new ArrayList<>(message.getGroupChatRecipients());
+                                    members.add(message.getUsername());
+                                    members.remove(username);
+                                    Platform.runLater(() -> openNewGroupChat(members));
+                                }
+                                if (message.getMessage().equals(" has left the chat.")) {
+                                    Message finalMessage3 = message;
+                                    Platform.runLater(() -> groupChatTextArea.appendText(finalMessage3.getUsername() + finalMessage3.getMessage() + "\n\n"));
+                                }
+                                else {
+                                    Message finalMessage4 = message;
+                                    Platform.runLater(() -> groupChatTextArea.appendText(finalMessage4.getUsername() + ": \n" + finalMessage4.getMessage() + "\n\n"));
                                 }
                             }
                             break;

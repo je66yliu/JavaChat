@@ -93,6 +93,15 @@ public class ServerMain extends Observable {
                             break;
 
 
+                        //Group chat
+                        case GROUP:
+                            Message groupMessage = new Message(0, MessageType.GROUP, messageReceived.getMessage(), username, null);
+                            groupMessage.setGroupChatRecipients(messageReceived.getGroupChatRecipients());
+                            setChanged();
+                            notifyObservers(groupMessage);
+                            break;
+
+
                         //Client wants to register as a new user
                         case REG:
 
