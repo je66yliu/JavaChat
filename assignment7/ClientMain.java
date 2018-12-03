@@ -278,17 +278,24 @@ public class ClientMain extends Application {
         outgoing.setMaxWidth(400);
         outgoing.setMaxHeight(20);
         Button sendText = new Button("Send");
+        Label chatRoomNotification = new Label("notification");
 
         outgoing.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.ENTER) {
+            if (keyEvent.getCode() == KeyCode.ENTER)  {
                 try {
-                    System.out.println(outgoing.getText());
-                    writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
-                    writer.flush();
-                    outgoing.setText("");
-                    usernameTextField.setText("");
-                    passwordTextField.setText("");
-                    usernameTextField.requestFocus();
+                    if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
+                        chatRoomNotification.setText("You have to type something before you send it.");
+                    } else{
+                        System.out.println(outgoing.getText());
+                        writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
+                        writer.flush();
+                        outgoing.setText("");
+                        usernameTextField.setText("");
+                        passwordTextField.setText("");
+                        chatRoomNotification.setText("");
+                        usernameTextField.requestFocus();
+                    }
+
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -296,17 +303,24 @@ public class ClientMain extends Application {
         });
         sendText.setOnAction(e -> {
             try {
-                System.out.println(outgoing.getText());
-                writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
-                writer.flush();
-                outgoing.setText("");
-                usernameTextField.setText("");
-                passwordTextField.setText("");
-                usernameTextField.requestFocus();
+                if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
+                    chatRoomNotification.setText("You have to type something before you send it.");
+                } else{
+                    System.out.println(outgoing.getText());
+                    writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
+                    writer.flush();
+                    outgoing.setText("");
+                    usernameTextField.setText("");
+                    passwordTextField.setText("");
+                    chatRoomNotification.setText("");
+                    usernameTextField.requestFocus();
+                }
+
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
+
 
         HBox textInput = new HBox();
         textInput.getChildren().addAll(outgoing, sendText);
@@ -322,7 +336,7 @@ public class ClientMain extends Application {
         //****************************************
         //Main Control
         VBox chats = new VBox();
-        chats.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput);
+        chats.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput,chatRoomNotification);
 
         mainBox = new HBox();
         mainBox.getChildren().addAll(chats, onlineList);
