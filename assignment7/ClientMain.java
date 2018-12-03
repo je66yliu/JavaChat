@@ -389,9 +389,9 @@ public class ClientMain extends Application {
         loginScreenVBox.setSpacing(10);
 
         String loginScreeVBoxLayout = "-fx-border-color: orange;\n" +
-                                    "-fx-border-insets: 5;\n" +
-                                    "-fx-border-width: 3;\n" +
-                                    "-fx-border-style: dashed;\n";
+                                        "-fx-border-insets: 5;\n" +
+                                        "-fx-border-width: 3;\n" +
+                                        "-fx-border-style: dashed;\n";
 
         loginScreenVBox.setStyle(loginScreeVBoxLayout);
 
@@ -416,22 +416,24 @@ public class ClientMain extends Application {
         label_username = new Label("");
         Label label_ChatHistory = new Label("Chat History");
         incoming = new TextArea();
-        incoming.setMaxHeight(200);
-        incoming.setMaxWidth(400);
+        incoming.setPrefHeight(400);
+        incoming.setPrefWidth(500);
         incoming.setEditable(false);
+        incoming.setWrapText(true);
 
 
         //****************************************
         //Set up text input
         Label label_EnterText = new Label("Enter Text Here");
         outgoing = new TextArea();
-        outgoing.setMaxWidth(400);
-        outgoing.setMaxHeight(20);
+        outgoing.setPrefWidth(400);
+        outgoing.setPrefHeight(50);
+        outgoing.setWrapText(true);
         Button sendText = new Button("Send");
         Label chatRoomNotification = new Label("");
 
         outgoing.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.ENTER)  {
+            if (keyEvent.getCode().equals(KeyCode.ENTER))  {
                 try {
                     if (outgoing.getText() == null || outgoing.getText().isEmpty()) {
                         chatRoomNotification.setText("You have to type something before you send it.");
@@ -439,18 +441,18 @@ public class ClientMain extends Application {
                         System.out.println(outgoing.getText());
                         writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
                         writer.flush();
-                        outgoing.setText("");
-                        usernameTextField.setText("");
-                        passwordTextField.setText("");
                         chatRoomNotification.setText("");
-                        usernameTextField.requestFocus();
+                        outgoing.setText("");
                     }
 
                 } catch (IOException ex) {
                     ex.printStackTrace();
+                } finally {
+                    keyEvent.consume();
                 }
             }
         });
+
         sendText.setOnAction(e -> {
             try {
                 if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
@@ -460,10 +462,8 @@ public class ClientMain extends Application {
                     writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
                     writer.flush();
                     outgoing.setText("");
-                    usernameTextField.setText("");
-                    passwordTextField.setText("");
                     chatRoomNotification.setText("");
-                    usernameTextField.requestFocus();
+                    outgoing.requestFocus();
                 }
 
             } catch (IOException ex) {
@@ -481,14 +481,14 @@ public class ClientMain extends Application {
         Label online = new Label("Online");
         onlineList = new VBox();
         onlineList.getChildren().add(online);
-        onlineList.setMaxWidth(100);
+        onlineList.setPrefWidth(100);
 
         //****************************************
         //Set up group chat ListView and createGroupChat button
         Label createGroupChat = new Label("Create a Group Chat");
         groupChatListView = new ListView<>();
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        groupChatListView.setPrefWidth(150);
+        groupChatListView.setPrefWidth(100);
         Button createGroupChatButton = new Button("Create");
 
 
