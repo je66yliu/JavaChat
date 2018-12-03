@@ -37,6 +37,7 @@ public class ClientMain extends Application {
 
     private HBox mainBox;
     private VBox onlineList;
+    private ListView<String> groupChatListView;
 
     private boolean isLoggedIn = false;
 
@@ -278,14 +279,14 @@ public class ClientMain extends Application {
         outgoing.setMaxWidth(400);
         outgoing.setMaxHeight(20);
         Button sendText = new Button("Send");
-        Label chatRoomNotification = new Label("notification");
+        Label chatRoomNotification = new Label("");
 
         outgoing.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER)  {
                 try {
-                    if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
+                    if (outgoing.getText() == null || outgoing.getText().isEmpty()) {
                         chatRoomNotification.setText("You have to type something before you send it.");
-                    } else{
+                    } else {
                         System.out.println(outgoing.getText());
                         writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
                         writer.flush();
@@ -332,14 +333,24 @@ public class ClientMain extends Application {
         onlineList = new VBox();
         onlineList.getChildren().add(online);
 
+        //****************************************
+        //Set up group chat ListView and createGroupChat button
+        Label createGroupChat = new Label("Create a Group Chat");
+        groupChatListView = new ListView<>();
+        groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        Button createGroupChatButton = new Button("Create");
+
 
         //****************************************
         //Main Control
         VBox chats = new VBox();
         chats.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput,chatRoomNotification);
 
+        VBox makeGroupChat = new VBox();
+        makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
+
         mainBox = new HBox();
-        mainBox.getChildren().addAll(chats, onlineList);
+        mainBox.getChildren().addAll(chats, onlineList, makeGroupChat);
 
         chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -369,6 +380,7 @@ public class ClientMain extends Application {
      */
     public void updateAllOnlineUsers() {
         onlineList.getChildren().retainAll(onlineList.getChildren().get(0));
+        groupChatListView.getItems().clear();
         for (String s : onlineUsers) {
             Button b = new Button();
             if (s.equals(username)) {
@@ -377,6 +389,7 @@ public class ClientMain extends Application {
             } else {
                 b.setText(s);
                 onlineList.getChildren().add(b);
+                groupChatListView.getItems().add(s);
             }
             b.setOnAction(e -> openNewPrivateChat(s));
         }
@@ -410,12 +423,14 @@ public class ClientMain extends Application {
             msg.setOnKeyPressed(keyEvent -> {
                 if (keyEvent.getCode() == KeyCode.ENTER) {
                     try {
-                        ta.appendText(username + ": \n" + msg.getText() + "\n\n");
-                        Message privateMessage = new Message(portAddress, MessageType.PRIVATE, msg.getText(), username, null);
-                        msg.setText("");
-                        privateMessage.setRecipient(friend);
-                        writer.writeObject(privateMessage);
-                        writer.flush();
+                        if (!msg.getText().equals("") && msg.getText() != null) {
+                            ta.appendText(username + ": \n" + msg.getText() + "\n\n");
+                            Message privateMessage = new Message(portAddress, MessageType.PRIVATE, msg.getText(), username, null);
+                            msg.setText("");
+                            privateMessage.setRecipient(friend);
+                            writer.writeObject(privateMessage);
+                            writer.flush();
+                        }
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
@@ -423,12 +438,14 @@ public class ClientMain extends Application {
             });
             sendButton.setOnAction(e -> {
                 try {
-                    ta.appendText(username + ": \n" + msg.getText() + "\n\n");
-                    Message privateMessage = new Message(portAddress, MessageType.PRIVATE, msg.getText(), username, null);
-                    msg.setText("");
-                    privateMessage.setRecipient(friend);
-                    writer.writeObject(privateMessage);
-                    writer.flush();
+                    if (!msg.getText().equals("") && msg.getText() != null) {
+                        ta.appendText(username + ": \n" + msg.getText() + "\n\n");
+                        Message privateMessage = new Message(portAddress, MessageType.PRIVATE, msg.getText(), username, null);
+                        msg.setText("");
+                        privateMessage.setRecipient(friend);
+                        writer.writeObject(privateMessage);
+                        writer.flush();
+                    }
                 }
                 catch (IOException ex) {
                     ex.printStackTrace();
