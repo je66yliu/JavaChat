@@ -637,6 +637,7 @@ public class ClientMain extends Application {
                             privateMessage.setRecipient(friend);
                             writer.writeObject(privateMessage);
                             writer.flush();
+                            keyEvent.consume();
                         }
                     } catch (IOException ex) {
                         ex.printStackTrace();
