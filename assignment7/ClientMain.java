@@ -5,13 +5,15 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -19,6 +21,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Pattern;
+
+import static javafx.scene.paint.Color.WHITE;
 
 public class ClientMain extends Application {
     final private int WINDOW_WIDTH = 800;
@@ -182,19 +186,26 @@ public class ClientMain extends Application {
         /***********************
          * SERVER CONFIG SCREEN*
          * *********************/
+
         //IP Address
         Label ipAddressLabel = new Label("Server IP Address: ");
+
         ipAddressTextField = new TextField();
         ipAddressTextField.setMaxHeight(10);
-        ipAddressTextField.setMaxWidth(100);
+        ipAddressTextField.setMaxWidth(150);
         ipAddressTextField.setText("127.0.0.1");
+
         HBox ipConfigBox = new HBox(ipAddressLabel, ipAddressTextField);
+        ipConfigBox.setPrefWidth(500);
+        ipConfigBox.setSpacing(10);
 
         //Port number
         Label portLabel = new Label("Port: ");
+        portLabel.setAlignment(Pos.CENTER_LEFT);
+        portLabel.setTextAlignment(TextAlignment.LEFT);
         portTextField = new TextField();
         portTextField.setMaxHeight(10);
-        portTextField.setMaxWidth(100);
+        portTextField.setMaxWidth(150);
         portTextField.setText("5000");
             //Making sure the textfield only takes numbers
         portTextField.textProperty().addListener(new ChangeListener<String>() {
@@ -207,6 +218,8 @@ public class ClientMain extends Application {
             }
         });
         HBox portConfigBox = new HBox(portLabel, portTextField);
+        portConfigBox.setPrefWidth(500);
+        portConfigBox.setSpacing(80);
 
         //Connection notification
         Label connectionNotification = new Label("");
@@ -230,11 +243,29 @@ public class ClientMain extends Application {
             }
         });
 
+        //Progress bar
+        ProgressBar connectingBar =  new ProgressBar();
+        connectingBar.setProgress(-1);
+
+
         VBox connectionConfigBox = new VBox();
-        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification);
+        connectionConfigBox.setPrefHeight(200);
+        connectionConfigBox.setPrefWidth(320);
+        connectionConfigBox.setPadding(new Insets(30));
+
+        connectionConfigBox.setAlignment(Pos.CENTER);
+        connectionConfigBox.setSpacing(10);
+        connectionConfigBox.getChildren().addAll(ipConfigBox,portConfigBox,connectServerButton,connectionNotification,connectingBar);
+        connectionConfigBox.setBackground(new Background(new BackgroundFill(Color.WHITE,CornerRadii.EMPTY, Insets.EMPTY)));
+
         GridPane serverConfigPane = new GridPane();
+        serverConfigPane.setAlignment(Pos.CENTER);
+        serverConfigPane.setBackground(new Background(new BackgroundFill(Color.rgb(223,125,60),
+                CornerRadii.EMPTY, Insets.EMPTY)));
         serverConfigPane.getChildren().addAll(connectionConfigBox);
+
         Scene serverConfigScene = new Scene(serverConfigPane, WINDOW_WIDTH, WINDOW_HEIGHT);
+        serverConfigPane.getStylesheets().add("C:\\School\\2018 Fall\\EE422C\\Project\\Project7\\src\\assignment7\\resources\\connection_style.css");
 
         mainStage.setScene(serverConfigScene);
 
