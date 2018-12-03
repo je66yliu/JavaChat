@@ -2,37 +2,53 @@ package assignment7;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableListValue;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.regex.Pattern;
+
+import static javafx.scene.paint.Color.WHITE;
 
 public class ClientMain2 extends Application {
     final private int WINDOW_WIDTH = 800;
     final private int WINDOW_HEIGHT = 600;
     private TextArea incoming;
-    private TextField outgoing;
+    private TextArea outgoing;
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
     private String username;
     private int portAddress;
+    private String ipAddress;
     private Label registerNotification;
     private Scene chatRoom;
+    private Scene loginScreenScene;
     private static Stage mainStage;
 
     TextField usernameTextField;
     PasswordField passwordTextField;
+    TextField ipAddressTextField;
+    TextField portTextField;
     Label label_username;
 
     private HBox mainBox;
@@ -44,9 +60,23 @@ public class ClientMain2 extends Application {
     private static ArrayList<String> onlineUsers = new ArrayList<>();
 
     private static HashMap<String, TextArea> privateChats = new HashMap<>();
+    private static HashMap<String, Stage> privateChatWindows = new HashMap<>();
+
+    private static boolean isInGroupChat = false;
+    private static ArrayList<String> groupChatMembers = new ArrayList<>();
+    private Stage groupChatStage;
+    private TextArea groupChatTextArea;
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public void setPortAddress(int portAddress) {
+        this.portAddress = portAddress;
     }
 
     /**
@@ -56,7 +86,7 @@ public class ClientMain2 extends Application {
      */
     private void connectToServer() throws IOException {
         @SuppressWarnings("resource")
-        Socket clientSock = new Socket("127.0.0.1", 5000);
+        Socket clientSock = new Socket(ipAddress, portAddress);
         //Socket clientSock = new Socket("172.20.10.8", 5050);
         portAddress = clientSock.getLocalPort();
         writer = new ObjectOutputStream(clientSock.getOutputStream());
@@ -66,6 +96,46 @@ public class ClientMain2 extends Application {
         readerThread.start();
     }
 
+    /****Emoji Initialization****/
+    byte[] emoji1_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x81};
+    String emoji1_String = new String(emoji1_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji2_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x82};
+    String emoji2_String = new String(emoji2_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji3_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x83};
+    String emoji3_String = new String(emoji3_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji4_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x84};
+    String emoji4_String = new String(emoji4_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji5_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x85};
+    String emoji5_String = new String(emoji5_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji6_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x86};
+    String emoji6_String = new String(emoji6_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji7_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x87};
+    String emoji7_String = new String(emoji7_byte, Charset.forName("UTF-8"));
+
+    byte[] emoji8_byte = new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x88};
+    String emoji8_String = new String(emoji8_byte, Charset.forName("UTF-8"));
+
+
+    /**** Input validation ****/
+
+    private static final Pattern PATTERN = Pattern.compile(
+            "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+
+    /**
+     * Check if the ip address is valid
+     *
+     * @param ip
+     * @return a boolean
+     */
+    public static boolean validateIP(final String ip) {
+        return PATTERN.matcher(ip).matches();
+    }
 
 
     private final Pattern hasUppercase = Pattern.compile("[A-Z]");
@@ -75,30 +145,31 @@ public class ClientMain2 extends Application {
 
     /**
      * Check if the username is valid
+     *
      * @param user
      * @return a string of results
      */
-    private String usernameValidation(String user){
+    private String usernameValidation(String user) {
         StringBuilder validation = new StringBuilder();
-        if (user == null){
+        if (user == null) {
             validation.append("Username can't be empty.");
             return validation.toString();
         }
 
-        if (user.isEmpty()){
+        if (user.isEmpty()) {
             validation.append("Username can't be empty.");
             return validation.toString();
         }
 
-        if (user.length()<4){
+        if (user.length() < 4) {
             validation.append("Username has to be at least 4 characters.\n");
         }
 
-        if(hasSpecialChar.matcher(user).find()){
+        if (hasSpecialChar.matcher(user).find()) {
             validation.append("Username can not contain special characters.\n");
         }
 
-        if (validation.length()==0){
+        if (validation.length() == 0) {
             validation.append("Success");
         }
         return validation.toString();
@@ -106,43 +177,44 @@ public class ClientMain2 extends Application {
 
     /**
      * Check if the password is valid
+     *
      * @param pass
      * @return a string of results
      */
-    private String passwordValidation(String pass){
+    private String passwordValidation(String pass) {
         StringBuilder validation = new StringBuilder();
 
-        if (pass == null){
+        if (pass == null) {
             validation.append("Password can't be empty.");
             return validation.toString();
         }
 
-        if (pass.isEmpty()){
+        if (pass.isEmpty()) {
             validation.append("Password can't be empty.");
             return validation.toString();
         }
 
-        if (pass.length()<5){
+        if (pass.length() < 5) {
             validation.append("Password has to be at least 5 characters.\n");
         }
 
-        if (!hasUppercase.matcher(pass).find()){
+        if (!hasUppercase.matcher(pass).find()) {
             validation.append("Password needs an upper case letter.\n");
         }
 
-        if (!hasLowercase.matcher(pass).find()){
+        if (!hasLowercase.matcher(pass).find()) {
             validation.append("Password needs a lower case letter.\n");
         }
 
-        if (!hasNumber.matcher(pass).find()){
+        if (!hasNumber.matcher(pass).find()) {
             validation.append("Password needs a number.\n");
         }
 
-        if(!hasSpecialChar.matcher(pass).find()){
+        if (!hasSpecialChar.matcher(pass).find()) {
             validation.append("Password needs a special character.\n");
         }
 
-        if (validation.length()==0){
+        if (validation.length() == 0) {
             validation.append("Success");
         }
         return validation.toString();
@@ -151,30 +223,124 @@ public class ClientMain2 extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        connectToServer();
-
         mainStage = primaryStage;
-
         mainStage.setTitle("Pair-40 Chat Room");
 
-        //****************************************
+        /***********************
+         * SERVER CONFIG SCREEN*
+         * *********************/
+
+        //IP Address
+        Label ipAddressLabel = new Label("Server IP Address: ");
+
+        ipAddressTextField = new TextField();
+        ipAddressTextField.setMaxHeight(10);
+        ipAddressTextField.setMaxWidth(150);
+        ipAddressTextField.setText("127.0.0.1");
+
+        HBox ipConfigBox = new HBox(ipAddressLabel, ipAddressTextField);
+        ipConfigBox.setPrefWidth(500);
+        ipConfigBox.setSpacing(10);
+
+        //Port number
+        Label portLabel = new Label("Port: ");
+        portLabel.setAlignment(Pos.CENTER_LEFT);
+        portLabel.setTextAlignment(TextAlignment.LEFT);
+        portTextField = new TextField();
+        portTextField.setMaxHeight(10);
+        portTextField.setMaxWidth(150);
+        portTextField.setText("5000");
+        //Making sure the textfield only takes numbers
+        portTextField.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue,
+                                String newValue) {
+                if (!newValue.matches("\\d*")) {
+                    portTextField.setText(newValue.replaceAll("[^\\d]", ""));
+                }
+            }
+        });
+        HBox portConfigBox = new HBox(portLabel, portTextField);
+        portConfigBox.setPrefWidth(500);
+        portConfigBox.setSpacing(80);
+
+        //Connection notification
+        Label connectionNotification = new Label("");
+
+        //Connect button
+        Button connectServerButton = new Button("Connect to server");
+        connectServerButton.setOnAction(e -> {
+            if (validateIP(ipAddressTextField.getText())) {
+                setIpAddress(ipAddressTextField.getText());
+                setPortAddress(Integer.parseInt(portTextField.getText()));
+                try {
+                    connectToServer();
+                    connectionNotification.setText("");
+                    mainStage.setScene(loginScreenScene);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                    connectionNotification.setText("Connection failed");
+                }
+            } else {
+                connectionNotification.setText("Invalid IP Address");
+            }
+        });
+
+        //Progress bar
+        ProgressBar connectingBar = new ProgressBar();
+        connectingBar.setProgress(-1);
+
+
+        VBox connectionConfigBox = new VBox();
+        connectionConfigBox.setPrefHeight(200);
+        connectionConfigBox.setPrefWidth(400);
+        connectionConfigBox.setPadding(new Insets(30));
+        connectionConfigBox.setAlignment(Pos.CENTER);
+        connectionConfigBox.setSpacing(10);
+        connectionConfigBox.setBackground(new Background(new BackgroundFill(Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
+        connectionConfigBox.getChildren().addAll(ipConfigBox, portConfigBox, connectServerButton, connectionNotification, connectingBar);
+
+        String connectionConfigBoxLayout = "-fx-border-color: orange;\n" +
+                "-fx-border-insets: 5;\n" +
+                "-fx-border-width: 3;\n" +
+                "-fx-border-style: dashed;\n";
+
+        connectionConfigBox.setStyle(connectionConfigBoxLayout);
+
+        GridPane serverConfigPane = new GridPane();
+        serverConfigPane.setAlignment(Pos.CENTER);
+        serverConfigPane.setBackground(new Background(new BackgroundFill(Color.rgb(223, 125, 60),
+                CornerRadii.EMPTY, Insets.EMPTY)));
+        serverConfigPane.getChildren().addAll(connectionConfigBox);
+
+        Scene serverConfigScene = new Scene(serverConfigPane, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        // mainStage.setScene(serverConfigScene);
+
+
+        /***************
+         * LOGIN SCREEN*
+         * *************/
         //Set up login screen
+
         //Username
         Label usernameLabel = new Label("Username: ");
         usernameTextField = new TextField();
         usernameTextField.setMaxHeight(10);
-        usernameTextField.setMaxWidth(60);
+        usernameTextField.setMaxWidth(200);
         HBox usernameBox = new HBox(usernameLabel, usernameTextField);
+        usernameBox.setSpacing(20);
 
         //Password
         Label passwordLabel = new Label("Password: ");
         passwordTextField = new PasswordField();
         passwordTextField.setMaxHeight(10);
-        passwordTextField.setMaxWidth(60);
+        passwordTextField.setMaxWidth(200);
         HBox passwordBox = new HBox(passwordLabel, passwordTextField);
+        passwordBox.setSpacing(25);
 
         //Buttons
-        Button loginButton = new Button("Login: ");
+        Button loginButton = new Button("Login");
         loginButton.setOnAction(e -> {
             try {
                 //Check illegal characters
@@ -192,15 +358,15 @@ public class ClientMain2 extends Application {
                 username_result = usernameValidation(username);
                 password_result = passwordValidation(password);
 
-                if (username_result.equals("Success")){
-                    if (password_result.equals("Success")){
+                if (username_result.equals("Success")) {
+                    if (password_result.equals("Success")) {
                         System.out.println("Username and password are invalid format");
                         writer.writeObject(new Message(portAddress, MessageType.LOG, null, usernameTextField.getText(), passwordTextField.getText()));
                         writer.flush();
-                    } else{
+                    } else {
                         registerNotification.setText(password_result);
                     }
-                } else{
+                } else {
                     registerNotification.setText(username_result);
                 }
 
@@ -228,15 +394,15 @@ public class ClientMain2 extends Application {
                 username_result = usernameValidation(username);
                 password_result = passwordValidation(password);
 
-                if (username_result.equals("Success")){
-                    if (password_result.equals("Success")){
+                if (username_result.equals("Success")) {
+                    if (password_result.equals("Success")) {
                         System.out.println("Username and password are in valid format");
                         writer.writeObject(new Message(portAddress, MessageType.REG, null, usernameTextField.getText(), passwordTextField.getText()));
                         writer.flush();
-                    } else{
+                    } else {
                         registerNotification.setText(password_result);
                     }
-                } else{
+                } else {
                     registerNotification.setText(username_result);
                 }
 
@@ -249,40 +415,83 @@ public class ClientMain2 extends Application {
 
 //        Button changeToChatRoom = new Button("switch scene test");
         HBox loginButtonBox = new HBox(loginButton, registerButton);
+        loginButtonBox.setAlignment(Pos.CENTER);
+        loginButtonBox.setSpacing(40);
 
         //Notification label
         registerNotification = new Label("");
 
         //Grid control
+
         VBox loginScreenVBox = new VBox(usernameBox, passwordBox, loginButtonBox, registerNotification);
+        loginScreenVBox.setPrefHeight(200);
+        loginScreenVBox.setPrefWidth(400);
+        loginScreenVBox.setPadding(new Insets(30));
+        loginScreenVBox.setAlignment(Pos.CENTER);
+        loginScreenVBox.setSpacing(10);
+
+        String loginScreenVBoxLayout = "-fx-border-color: orange;\n" +
+                "-fx-border-insets: 5;\n" +
+                "-fx-border-width: 3;\n" +
+                "-fx-border-style: dashed;\n";
+
+        loginScreenVBox.setStyle(loginScreenVBoxLayout);
+
+        loginScreenVBox.setBackground(new Background(new BackgroundFill(Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
+
         GridPane loginScreenGrid = new GridPane();
+        loginScreenGrid.setAlignment(Pos.CENTER);
+        loginScreenGrid.setBackground(new Background(new BackgroundFill(Color.rgb(223, 125, 60),
+                CornerRadii.EMPTY, Insets.EMPTY)));
         loginScreenGrid.getChildren().addAll(loginScreenVBox);
-        Scene loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        mainStage.setScene(loginScreenScene);
+        loginScreenScene = new Scene(loginScreenGrid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
+        /*******************
+         * Chat room SCREEN*
+         * *****************/
         //****************************************
         //Set up text output
         label_username = new Label("");
         Label label_ChatHistory = new Label("Chat History");
         incoming = new TextArea();
-        incoming.setMaxHeight(200);
-        incoming.setMaxWidth(400);
+        incoming.setPrefHeight(370);
+        incoming.setPrefWidth(500);
         incoming.setEditable(false);
+        incoming.setWrapText(true);
 
 
         //****************************************
         //Set up text input
-        Label label_EnterText = new Label("Enter Text Here");
-        outgoing = new TextField();
-        outgoing.setMaxWidth(400);
-        outgoing.setMaxHeight(20);
+        Label label_EnterText = new Label("Enter Text Here:");
+
+        ComboBox<String> emoji = new ComboBox<>();
+        emoji.getItems().addAll(emoji1_String, emoji2_String, emoji3_String, emoji4_String, emoji5_String,
+                emoji6_String, emoji7_String, emoji8_String);
+        emoji.setPromptText(emoji1_String);
+
+        emoji.setOnAction(e->{
+            outgoing.appendText(emoji.getValue());
+            emoji.setPromptText(emoji1_String);
+            outgoing.requestFocus();
+        });
+
+        HBox toolBox = new HBox();
+        toolBox.setSpacing(30);
+        toolBox.getChildren().addAll(label_EnterText, emoji);
+
+        outgoing = new TextArea();
+        outgoing.setPrefWidth(400);
+        outgoing.setPrefHeight(70);
+        outgoing.setWrapText(true);
         Button sendText = new Button("Send");
+        sendText.setPrefWidth(90);
+        sendText.setPrefHeight(70);
         Label chatRoomNotification = new Label("");
 
         outgoing.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.ENTER)  {
+            if (keyEvent.getCode().equals(KeyCode.ENTER)) {
                 try {
                     if (outgoing.getText() == null || outgoing.getText().isEmpty()) {
                         chatRoomNotification.setText("You have to type something before you send it.");
@@ -290,31 +499,30 @@ public class ClientMain2 extends Application {
                         System.out.println(outgoing.getText());
                         writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
                         writer.flush();
-                        outgoing.setText("");
-                        usernameTextField.setText("");
-                        passwordTextField.setText("");
                         chatRoomNotification.setText("");
-                        usernameTextField.requestFocus();
+                        outgoing.setText("");
+                        outgoing.requestFocus();
                     }
 
                 } catch (IOException ex) {
                     ex.printStackTrace();
+                } finally {
+                    keyEvent.consume();
                 }
             }
         });
+
         sendText.setOnAction(e -> {
             try {
-                if (outgoing.getText()==null|| outgoing.getText().isEmpty()){
+                if (outgoing.getText() == null || outgoing.getText().isEmpty()) {
                     chatRoomNotification.setText("You have to type something before you send it.");
-                } else{
+                } else {
                     System.out.println(outgoing.getText());
                     writer.writeObject(new Message(portAddress, MessageType.MSG, outgoing.getText(), username, null));
                     writer.flush();
                     outgoing.setText("");
-                    usernameTextField.setText("");
-                    passwordTextField.setText("");
                     chatRoomNotification.setText("");
-                    usernameTextField.requestFocus();
+                    outgoing.requestFocus();
                 }
 
             } catch (IOException ex) {
@@ -324,6 +532,7 @@ public class ClientMain2 extends Application {
 
 
         HBox textInput = new HBox();
+        textInput.setSpacing(10);
         textInput.getChildren().addAll(outgoing, sendText);
 
 
@@ -332,27 +541,40 @@ public class ClientMain2 extends Application {
         Label online = new Label("Online");
         onlineList = new VBox();
         onlineList.getChildren().add(online);
+        onlineList.setPrefWidth(100);
 
         //****************************************
         //Set up group chat ListView and createGroupChat button
         Label createGroupChat = new Label("Create a Group Chat");
         groupChatListView = new ListView<>();
         groupChatListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        groupChatListView.setPrefWidth(100);
         Button createGroupChatButton = new Button("Create");
 
+        createGroupChatButton.setOnAction(e -> {
+            ObservableList<String> members = groupChatListView.getSelectionModel().getSelectedItems();
+            ArrayList<String> getMembers = new ArrayList<>(members);
+            openNewGroupChat(getMembers);
+        });
 
         //****************************************
         //Main Control
         VBox chats = new VBox();
-        chats.getChildren().addAll(label_username, label_ChatHistory, incoming, label_EnterText, textInput,chatRoomNotification);
+        chats.setSpacing(10);
+        chats.getChildren().addAll(label_username, label_ChatHistory, incoming, toolBox, textInput, chatRoomNotification);
 
         VBox makeGroupChat = new VBox();
         makeGroupChat.getChildren().addAll(createGroupChat, groupChatListView, createGroupChatButton);
 
         mainBox = new HBox();
-        mainBox.getChildren().addAll(chats, onlineList, makeGroupChat);
+        mainBox.getChildren().addAll(makeGroupChat, onlineList, chats);
+        mainBox.setPadding(new Insets(30));
+        mainBox.setSpacing(20);
 
         chatRoom = new Scene(mainBox, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+
+        mainStage.setScene(serverConfigScene);
 
 
 //        //****************************************
@@ -363,7 +585,21 @@ public class ClientMain2 extends Application {
         //Closing Controls
         mainStage.setOnCloseRequest(e -> {
             try {
+                //Leave all the private chats first, and close all private chat windows
+                Set<String> currentlyChatting = privateChats.keySet();
+                for (String friend : currentlyChatting) {
+                    leaveChat(friend);
+                    privateChatWindows.get(friend).close();
+                    privateChatWindows.remove(friend);
+                }
+
+                if (isInGroupChat) {
+                    leaveGroupChat(groupChatMembers);
+                    groupChatStage.close();
+                }
+
                 writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
+                writer.flush();
                 reader.close();
                 writer.close();
             } catch (IOException ex) {
@@ -402,8 +638,7 @@ public class ClientMain2 extends Application {
             a.setHeaderText("Cannot chat with yourself");
             a.setContentText("Please choose another user.");
             a.showAndWait();
-        }
-        else if (!privateChats.containsKey(friend)) {
+        } else if (!privateChats.containsKey(friend)) {
             TextArea ta = new TextArea();
             ta.setMaxHeight(200);
             ta.setMaxWidth(400);
@@ -430,6 +665,7 @@ public class ClientMain2 extends Application {
                             privateMessage.setRecipient(friend);
                             writer.writeObject(privateMessage);
                             writer.flush();
+                            keyEvent.consume();
                         }
                     } catch (IOException ex) {
                         ex.printStackTrace();
@@ -446,8 +682,7 @@ public class ClientMain2 extends Application {
                         writer.writeObject(privateMessage);
                         writer.flush();
                     }
-                }
-                catch (IOException ex) {
+                } catch (IOException ex) {
                     ex.printStackTrace();
                 }
             });
@@ -461,20 +696,105 @@ public class ClientMain2 extends Application {
             Stage privateChatWindow = new Stage();
             privateChatWindow.setTitle("Private chat between " + username + ", " + friend);
             privateChatWindow.setScene(new Scene(mainChatPanel, 450, 450));
+
+            privateChatWindows.put(friend, privateChatWindow);
+
             privateChatWindow.show();
 
-            privateChatWindow.setOnCloseRequest(e -> {
-                try {
-                    privateChats.remove(friend);
-                    Message privateMessage = new Message(portAddress, MessageType.PRIVATE, " has left the chat.", username, null);
-                    privateMessage.setRecipient(friend);
-                    writer.writeObject(privateMessage);
-                    writer.flush();
+            privateChatWindow.setOnCloseRequest(e -> leaveChat(friend));
+        }
+    }
+
+    public void openNewGroupChat(ArrayList<String> members) {
+        if (!isInGroupChat) {
+            isInGroupChat = true;
+
+            groupChatTextArea = new TextArea();
+            groupChatTextArea.setMaxHeight(200);
+            groupChatTextArea.setMaxWidth(400);
+            groupChatTextArea.setEditable(false);
+
+            groupChatMembers.addAll(members);
+
+            Label enterText = new Label("Enter a message");
+
+            TextField msg = new TextField();
+            msg.setMaxHeight(20);
+            msg.setMaxWidth(400);
+
+            Button sendButton = new Button("Send");
+
+
+            msg.setOnKeyPressed(keyEvent -> {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    try {
+                        if (!msg.getText().equals("") && msg.getText() != null) {
+                            groupChatTextArea.appendText(username + ": \n" + msg.getText() + "\n\n");
+                            Message groupChatMessage = new Message(portAddress, MessageType.GROUP, msg.getText(), username, null);
+                            msg.setText("");
+                            groupChatMessage.setGroupChatRecipients(members);
+                            writer.writeObject(groupChatMessage);
+                            writer.flush();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
-                catch (IOException ex) {
+            });
+            sendButton.setOnAction(e -> {
+                try {
+                    if (!msg.getText().equals("") && msg.getText() != null) {
+                        groupChatTextArea.appendText(username + ": \n" + msg.getText() + "\n\n");
+                        Message groupChatMessage = new Message(portAddress, MessageType.GROUP, msg.getText(), username, null);
+                        msg.setText("");
+                        groupChatMessage.setGroupChatRecipients(members);
+                        writer.writeObject(groupChatMessage);
+                        writer.flush();
+                    }
+                } catch (IOException ex) {
                     ex.printStackTrace();
                 }
             });
+
+            HBox msgPanel = new HBox();
+            msgPanel.getChildren().addAll(msg, sendButton);
+
+            VBox mainChatPanel = new VBox();
+            mainChatPanel.getChildren().addAll(groupChatTextArea, enterText, msgPanel);
+
+            groupChatStage = new Stage();
+            groupChatStage.setTitle("Group chat between " + username + ", " + String.join(", ", members));
+            groupChatStage.setScene(new Scene(mainChatPanel, 450, 450));
+
+            groupChatStage.show();
+
+            groupChatStage.setOnCloseRequest(e -> leaveGroupChat(members));
+        }
+    }
+
+    public void leaveChat(String friend) {
+        try {
+            privateChats.remove(friend);
+            Message privateMessage = new Message(portAddress, MessageType.PRIVATE, " has left the chat.", username, null);
+            privateMessage.setRecipient(friend);
+            writer.writeObject(privateMessage);
+            writer.flush();
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void leaveGroupChat(ArrayList<String> members) {
+        try {
+            isInGroupChat = false;
+            Message groupMessage = new Message(portAddress, MessageType.GROUP, " has left the chat.", username, null);
+            groupMessage.setGroupChatRecipients(members);
+            writer.writeObject(groupMessage);
+            writer.flush();
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -578,9 +898,29 @@ public class ClientMain2 extends Application {
                                 Message finalMessage2 = message;
                                 if (message.getMessage().equals(" has left the chat.")) {
                                     Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + finalMessage2.getMessage() + "\n\n"));
+                                } else {
+                                    Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + ": \n" + finalMessage2.getMessage() + "\n\n"));
+                                }
+                            }
+                            break;
+
+
+                        //Group chatting
+                        case GROUP:
+                            if (message.getGroupChatRecipients().contains(username)) {
+                                if (!isInGroupChat) {
+                                    ArrayList<String> members = new ArrayList<>(message.getGroupChatRecipients());
+                                    members.add(message.getUsername());
+                                    members.remove(username);
+                                    Platform.runLater(() -> openNewGroupChat(members));
+                                }
+                                if (message.getMessage().equals(" has left the chat.")) {
+                                    Message finalMessage3 = message;
+                                    Platform.runLater(() -> groupChatTextArea.appendText(finalMessage3.getUsername() + finalMessage3.getMessage() + "\n\n"));
                                 }
                                 else {
-                                    Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + ": \n" + finalMessage2.getMessage() + "\n\n"));
+                                    Message finalMessage4 = message;
+                                    Platform.runLater(() -> groupChatTextArea.appendText(finalMessage4.getUsername() + ": \n" + finalMessage4.getMessage() + "\n\n"));
                                 }
                             }
                             break;

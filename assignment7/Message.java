@@ -1,10 +1,13 @@
 package assignment7;
 
+import javafx.collections.ObservableList;
+
 import java.io.Serializable;
 import java.net.Socket;
+import java.util.ArrayList;
 
 enum MessageType implements Serializable {
-    MSG, PRIVATE, REG, LOG, LOGIN, LOGOUT
+    MSG, PRIVATE, GROUP, REG, LOG, LOGIN, LOGOUT
 }
 
 public class Message implements Serializable {
@@ -17,6 +20,7 @@ public class Message implements Serializable {
     private Socket clientSock = null;
 
     private String recipient = "";
+    private ArrayList<String> groupChatRecipients = new ArrayList<>();
 
     public Message(int socketPort, MessageType messageType, String message, String username, String password) {
         this.socketPort = socketPort;
@@ -54,11 +58,19 @@ public class Message implements Serializable {
         return recipient;
     }
 
+    public ArrayList getGroupChatRecipients() {
+        return groupChatRecipients;
+    }
+
     public void setClientSock(Socket clientSock) {
         this.clientSock = clientSock;
     }
 
     public void setRecipient(String recipient) {
         this.recipient = recipient;
+    }
+
+    public void setGroupChatRecipients(ArrayList<String> members) {
+        this.groupChatRecipients.addAll(members);
     }
 }
