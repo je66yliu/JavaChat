@@ -16,12 +16,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -71,17 +68,6 @@ public class ClientMain extends Application {
     private Stage groupChatStage;
     private TextArea groupChatTextArea;
 
-    private static boolean isConnected = false;
-
-
-    public static String buttonFile = "src/resources/button.wav";
-    public static Media buttonSound = new Media(new File(buttonFile).toURI().toString());
-    public static MediaPlayer buttonPlayer = new MediaPlayer(buttonSound);
-
-    public static String receivedMessage = "src/resources/received.wav";
-    public static Media receivedSound = new Media(new File(receivedMessage).toURI().toString());
-    public static MediaPlayer receivedPlayer = new MediaPlayer(receivedSound);
-
     public static void main(String[] args) {
         launch(args);
     }
@@ -107,7 +93,6 @@ public class ClientMain extends Application {
         writer = new ObjectOutputStream(clientSock.getOutputStream());
         reader = new ObjectInputStream(clientSock.getInputStream());
         System.out.println("Connected to the server");
-        isConnected = true;
         Thread readerThread = new Thread(new IncomingReader());
         readerThread.start();
     }
@@ -268,8 +253,6 @@ public class ClientMain extends Application {
         emoji.setPromptText(emoji1_String);
 
         emoji.setOnAction(e -> {
-            buttonPlayer.play();
-            buttonPlayer.seek(Duration.ZERO);
             input.appendText(emoji.getValue());
             emoji.setPromptText(emoji1_String);
             input.requestFocus();
@@ -333,8 +316,6 @@ public class ClientMain extends Application {
         //Connect button
         Button connectServerButton = new Button("Connect to server");
         connectServerButton.setOnAction(e -> {
-            buttonPlayer.play();
-            buttonPlayer.seek(Duration.ZERO);
             if (validateIP(ipAddressTextField.getText())) {
                 setIpAddress(ipAddressTextField.getText());
                 setPortAddress(Integer.parseInt(portTextField.getText()));
@@ -416,8 +397,6 @@ public class ClientMain extends Application {
         //Buttons
         Button loginButton = new Button("Login");
         loginButton.setOnAction(e -> {
-            buttonPlayer.play();
-            buttonPlayer.seek(Duration.ZERO);
             try {
                 //Check illegal characters
                 String username = usernameTextField.getText();
@@ -454,8 +433,6 @@ public class ClientMain extends Application {
         //Register button
         Button registerButton = new Button("Register");
         registerButton.setOnAction(e -> {
-            buttonPlayer.play();
-            buttonPlayer.seek(Duration.ZERO);
             try {
                 //Check illegal characters
                 String username = usernameTextField.getText();
@@ -594,8 +571,6 @@ public class ClientMain extends Application {
         });
 
         sendText.setOnAction(e -> {
-            buttonPlayer.play();
-            buttonPlayer.seek(Duration.ZERO);
             try {
                 if (outgoing.getText() == null || outgoing.getText().isEmpty()) {
                     chatRoomNotification.setText("You have to type something before you send it.");
@@ -640,8 +615,6 @@ public class ClientMain extends Application {
         Button createGroupChatButton = new Button("Create");
 
         createGroupChatButton.setOnAction(e -> {
-            buttonPlayer.play();
-            buttonPlayer.seek(Duration.ZERO);
             ObservableList<String> members = groupChatListView.getSelectionModel().getSelectedItems();
             ArrayList<String> getMembers = new ArrayList<>(members);
             openNewGroupChat(getMembers);
@@ -706,25 +679,23 @@ public class ClientMain extends Application {
         //Closing Controls
         mainStage.setOnCloseRequest(e -> {
             try {
-                if (isConnected) {
-                    //Leave all the private chats first, and close all private chat windows
-                    Set<String> currentlyChatting = privateChats.keySet();
-                    for (String friend : currentlyChatting) {
-                        leaveChat(friend);
-                        privateChatWindows.get(friend).close();
-                        privateChatWindows.remove(friend);
-                    }
-
-                    if (isInGroupChat) {
-                        leaveGroupChat(groupChatMembers);
-                        groupChatStage.close();
-                    }
-
-                    writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
-                    writer.flush();
-                    reader.close();
-                    writer.close();
+                //Leave all the private chats first, and close all private chat windows
+                Set<String> currentlyChatting = privateChats.keySet();
+                for (String friend : currentlyChatting) {
+                    leaveChat(friend);
+                    privateChatWindows.get(friend).close();
+                    privateChatWindows.remove(friend);
                 }
+
+                if (isInGroupChat) {
+                    leaveGroupChat(groupChatMembers);
+                    groupChatStage.close();
+                }
+
+                writer.writeObject(new Message(portAddress, MessageType.LOGOUT, "", username, null));
+                writer.flush();
+                reader.close();
+                writer.close();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -750,11 +721,7 @@ public class ClientMain extends Application {
                 onlineList.getChildren().add(b);
                 groupChatListView.getItems().add(s);
             }
-            b.setOnAction(e -> {
-                buttonPlayer.play();
-                buttonPlayer.seek(Duration.ZERO);
-                openNewPrivateChat(s);
-            });
+            b.setOnAction(e -> openNewPrivateChat(s));
         }
     }
 
@@ -811,8 +778,6 @@ public class ClientMain extends Application {
                 }
             });
             sendButton.setOnAction(e -> {
-                buttonPlayer.play();
-                buttonPlayer.seek(Duration.ZERO);
                 try {
                     if (!msg.getText().equals("") && msg.getText() != null) {
                         ta.appendText(username + ": \n" + msg.getText() + "\n\n");
@@ -906,8 +871,6 @@ public class ClientMain extends Application {
                 }
             });
             sendButton.setOnAction(e -> {
-                buttonPlayer.play();
-                buttonPlayer.seek(Duration.ZERO);
                 try {
                     if (!msg.getText().equals("") && msg.getText() != null) {
                         groupChatTextArea.appendText(username + ": \n" + msg.getText() + "\n\n");
@@ -1061,8 +1024,6 @@ public class ClientMain extends Application {
 
                         //Received a message
                         case MSG:
-                            receivedPlayer.play();
-                            receivedPlayer.seek(Duration.ZERO);
                             incoming.appendText(message.getUsername() + ": \n" + message.getMessage() + "\n\n");
                             break;
 
@@ -1078,11 +1039,7 @@ public class ClientMain extends Application {
                                 if (message.getMessage().equals(" has left the chat.")) {
                                     Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + finalMessage2.getMessage() + "\n\n"));
                                 } else {
-                                    Platform.runLater(() -> {
-                                        receivedPlayer.play();
-                                        receivedPlayer.seek(Duration.ZERO);
-                                        privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + ": \n" + finalMessage2.getMessage() + "\n\n");
-                                    });
+                                    Platform.runLater(() -> privateChats.get(finalMessage2.getUsername()).appendText(finalMessage2.getUsername() + ": \n" + finalMessage2.getMessage() + "\n\n"));
                                 }
                             }
                             break;
@@ -1102,11 +1059,7 @@ public class ClientMain extends Application {
                                     Platform.runLater(() -> groupChatTextArea.appendText(finalMessage3.getUsername() + finalMessage3.getMessage() + "\n\n"));
                                 } else {
                                     Message finalMessage4 = message;
-                                    Platform.runLater(() -> {
-                                        receivedPlayer.play();
-                                        receivedPlayer.seek(Duration.ZERO);
-                                        groupChatTextArea.appendText(finalMessage4.getUsername() + ": \n" + finalMessage4.getMessage() + "\n\n");
-                                    });
+                                    Platform.runLater(() -> groupChatTextArea.appendText(finalMessage4.getUsername() + ": \n" + finalMessage4.getMessage() + "\n\n"));
                                 }
                             }
                             break;
