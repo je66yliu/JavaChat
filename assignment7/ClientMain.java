@@ -1,3 +1,16 @@
+/* CHAT ROOM <ClientMain.java>
+ * EE422C Project 7 submission by
+ * Replace <...> with your actual data.
+ * Xihan Zhang
+ * xz5993
+ * 16345
+ * Jerry Liu
+ * jl59683
+ * 16375
+ * Slip days used: <0>
+ * Fall 2018
+ */
+
 package assignment7;
 
 import javafx.application.Application;
