@@ -40,7 +40,7 @@ public class ClientMain extends Application {
     private ObjectOutputStream writer;
     private String username;
     private int portAddress=5500;
-    private String ipAddress ="10.145.240.74";
+    private String ipAddress;
     private Label registerNotification;
     private Scene chatRoom;
     private Scene loginScreenScene;

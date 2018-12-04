@@ -12,25 +12,32 @@ public class ServerMain extends Observable {
     private static ArrayList<String> onlineUsers = new ArrayList<>();
     private static HashMap<Integer, String> socketPort_Username = new HashMap<>();
     private static HashMap<String, String> username_Password = new HashMap<>();
-
+    private static PrintWriter chat_logger;
     private int port = 8000;
+
+
+
 
     public static void main(String[] args) {
 
         try {
             System.out.println("Started initiating network....");
-            new ServerMain().initNetwork();
+            chat_logger = new PrintWriter("chat_logger.txt", "UTF-8");
+            new ServerMain().initNetwork(chat_logger);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
     }
 
+
+
     /**
      * Initializes network, and continuously listens for new connections
      * @throws Exception
+     * @param chat_logger
      */
-    private void initNetwork() throws Exception {
+    private void initNetwork(PrintWriter chat_logger) throws Exception {
         @SuppressWarnings("resource")
         ServerSocket serverSocket = new ServerSocket(port);
 
@@ -45,7 +52,7 @@ public class ServerMain extends Observable {
             ObjectOutputStream output = new ObjectOutputStream(clientSock.getOutputStream());
             ObjectInputStream input = new ObjectInputStream(clientSock.getInputStream());
             ClientObserver obs = new ClientObserver(output);
-            Thread t = new Thread(new ClientHandler(output, input, obs));
+            Thread t = new Thread(new ClientHandler(output, input, obs,chat_logger));
             t.start();
             this.addObserver(obs);
             System.out.println("Got a connection from " + clientSock);
@@ -59,11 +66,13 @@ public class ServerMain extends Observable {
         private ObjectInputStream reader;
         private ObjectOutputStream writer;
         private ClientObserver obs;
+        private PrintWriter chat_logger;
 
-        public ClientHandler(ObjectOutputStream out, ObjectInputStream in, ClientObserver obs) {
+        public ClientHandler(ObjectOutputStream out, ObjectInputStream in, ClientObserver obs, PrintWriter chat_logger) {
             this.reader = in;
             this.writer = out;
             this.obs = obs;
+            this.chat_logger = chat_logger;
         }
 
 
@@ -83,6 +92,11 @@ public class ServerMain extends Observable {
 
                         //Client wants to send message
                         case MSG:
+                            chat_logger.println(messageReceived.getUsername()+":");
+                            chat_logger.println(messageReceived.getMessage());
+                            chat_logger.println();
+                            chat_logger.flush();
+
                             setChanged();
                             notifyObservers(new Message(0, MessageType.MSG, messageReceived.getMessage(), username, null));
                             break;
