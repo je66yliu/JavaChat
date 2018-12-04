@@ -39,8 +39,8 @@ public class ClientMain extends Application {
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
     private String username;
-    private int portAddress;
-    private String ipAddress;
+    private int portAddress=5500;
+    private String ipAddress ="10.145.240.74";
     private Label registerNotification;
     private Scene chatRoom;
     private Scene loginScreenScene;
@@ -266,7 +266,7 @@ public class ClientMain extends Application {
         mainStage = primaryStage;
         mainStage.setTitle("Pair-40 Chat Room");
 
-        System.out.println(Font.getFamilies().toString());
+
         /***********************
          * SERVER CONFIG SCREEN*
          * *********************/
@@ -278,7 +278,7 @@ public class ClientMain extends Application {
         ipAddressTextField = new TextField();
         ipAddressTextField.setMaxHeight(10);
         ipAddressTextField.setMaxWidth(150);
-        ipAddressTextField.setText("127.0.0.1");
+        ipAddressTextField.setText("10.145.240.74");
 
         HBox ipConfigBox = new HBox(ipAddressLabel, ipAddressTextField);
         ipConfigBox.setPrefWidth(500);

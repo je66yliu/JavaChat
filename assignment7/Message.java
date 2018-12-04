@@ -1,7 +1,5 @@
 package assignment7;
 
-import javafx.collections.ObservableList;
-
 import java.io.Serializable;
 import java.net.Socket;
 import java.util.ArrayList;

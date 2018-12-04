@@ -13,11 +13,12 @@ public class ServerMain extends Observable {
     private static HashMap<Integer, String> socketPort_Username = new HashMap<>();
     private static HashMap<String, String> username_Password = new HashMap<>();
 
-    private int port = 5000;
+    private int port = 8000;
 
     public static void main(String[] args) {
-        System.out.println("start");
+
         try {
+            System.out.println("Started initiating network....");
             new ServerMain().initNetwork();
         } catch (Exception e) {
             e.printStackTrace();
@@ -32,6 +33,10 @@ public class ServerMain extends Observable {
     private void initNetwork() throws Exception {
         @SuppressWarnings("resource")
         ServerSocket serverSocket = new ServerSocket(port);
+
+
+
+        System.out.println("Server socket online");
 
         while (true) {
             Socket clientSock = serverSocket.accept();
